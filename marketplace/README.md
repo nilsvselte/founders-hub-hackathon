@@ -1,6 +1,6 @@
-# Mesh meeting room marketplace
+# Roomline meeting room marketplace
 
-Mesh buyers can leave a standby request for a meeting room. When staff release an opening, the marketplace matches the request, holds a priced offer, and confirms the booking after the buyer accepts. Next.js serves the buyer page, and FastAPI on Uvicorn handles matching and booking in PostgreSQL.
+Renters can browse venues, sign in, and request a time. Hosts use a separate dashboard to create and publish room listings and release availability. When an opening matches a request, the marketplace holds a priced offer and confirms it after the renter accepts. Next.js serves the marketplace and FastAPI on Uvicorn manages accounts and bookings in PostgreSQL.
 
 ## Run with Docker Compose
 
@@ -54,27 +54,29 @@ Open `http://localhost:3000`. Next.js forwards `/api/*` to Uvicorn so browser re
 ## Try the booking demo
 
 1. Set `MARKETPLACE_DEMO_MODE=1` in `backend/.env` before starting Uvicorn.
-2. Submit a standby request on the buyer page, then press **Release demo room** in the demo controls. The control simulates an early release for a seeded room.
+2. Create a renter account, open a sample room, and submit a standby request. Press the demo release control to simulate an early release for that room.
 3. Wait for the quote, then accept it. The marketplace shows a booking reference once PostgreSQL confirms the reservation.
 
 Set `ANTHROPIC_API_KEY` in the backend environment to use Claude. You can override the model with `ANTHROPIC_MODEL`. Without a key, demo mode uses a deterministic matcher and labels its offers as demo matches. Keep demo mode disabled outside local development.
 
-## Choose a venue
+To test the host side, register as a host, create a listing, publish it, and release an opening from the host dashboard. Use a separate browser session to book it as a renter. The initial catalog includes pilot listings and fictional sample venues, with illustrative photography.
 
-Each deployment serves one venue, set with `MARKETPLACE_VENUE` in the backend. Use `digs` for Mesh at Digs (the default), `kowork` for Kowork at Kjøpmannsgata 40, or `brighten` for Brighten at Bakke Bydelshus, Nordre Berggate 2. The venue sets the page branding, the rooms that requests can match, the demo release room, and the booking reference prefix. Rooms and requests store their venue, so several venues can share one database.
+## Pilot venues
 
-To run the Kowork demo with Docker Compose, run this from `marketplace/`.
+The public catalog shows published listings across venues. A room-specific standby request can only match an opening for that room. For the venue API and default room used by a demo release without an explicit room ID, set `MARKETPLACE_VENUE` to `digs` (Mesh at Digs, the default), `kowork` (Kowork at Kjøpmannsgata 40 in Trondheim), or `brighten` (Brighten at Bakke Bydelshus, Nordre Berggate 2).
+
+To use Kowork as the default pilot in Docker Compose, run this from `marketplace/`.
 
 ```sh
 MARKETPLACE_VENUE=kowork MARKETPLACE_DEMO_MODE=1 docker compose up --build -d --wait
 ```
 
-Kowork has a shared meeting room for 8 to 12 people and a quiet room, seeded in `backend/app/migrations/002_venues.sql`. The capacities come from koteng.no. The equipment and prices are placeholders until Kowork confirms them. The hero photo in `frontend/public/venues/kowork.webp` and the meeting room photo in `frontend/public/rooms/kowork-meeting-room.webp` are Kowork's own, from koteng.no. Brighten has a meeting room and a phone pod, seeded in `backend/app/migrations/003_brighten.sql`. brighten.no names both but lists no capacities, equipment, or prices, so all of those are placeholders until Brighten confirms them. The hero photo in `frontend/public/venues/brighten.webp` and the meeting room photo in `frontend/public/rooms/brighten-meeting-room.webp` are Brighten's own, from brighten.no. The site has no photo of the phone pod. Run its demo with `MARKETPLACE_VENUE=brighten`.
+The Kowork seed includes the shared meeting room, listed for groups of 8 to 12, and a quiet room. The capacity information comes from [Koteng](https://koteng.no/). The equipment and prices are sample values pending confirmation from Kowork. The catalog uses Kowork’s own meeting-room photo from [Koteng](https://koteng.no/). See [the venue migration](backend/app/migrations/002_venues.sql).
 
-Add a venue by adding it to `backend/app/venues.py` and seeding its rooms in a new migration.
+Brighten lists a meeting room and a phone pod. Their capacities, equipment, and prices are placeholders until Brighten confirms them. The catalog uses Brighten’s meeting-room photo from [Brighten](https://brighten.no/).
 
 ## Connect a device
 
-Set `MARKETPLACE_DEVICE_TOKEN` to enable `POST /internal/device/events`. The device integration sends `Authorization: Bearer <token>`. For local testing, the fixture adapter accepts `type: room.released`, `event_id`, `external_room_id` (use `digs-demo-1` or `digs-demo-2` at Digs, `kowork-meeting-room` or `kowork-quiet-room` at Kowork, or `brighten-meeting-room` or `brighten-phone-pod` at Brighten), `block_id`, `released_at`, and `scheduled_end_at`. Send both timestamps as ISO 8601 strings with offsets, and reuse event and block IDs when retrying the same release.
+Set `MARKETPLACE_DEVICE_TOKEN` to enable `POST /internal/device/events`. The device integration sends `Authorization: Bearer <token>`. For local testing, the fixture adapter accepts `type: room.released`, `event_id`, `external_room_id`, `block_id`, `released_at`, and `scheduled_end_at`. Pilot room IDs are `digs-demo-1` and `digs-demo-2` for Digs, `kowork-meeting-room` and `kowork-quiet-room` for Kowork, and `brighten-meeting-room` and `brighten-phone-pod` for Brighten. Send both timestamps as ISO 8601 strings with offsets, and reuse event and block IDs when retrying the same release.
 
 When the real API is ready, set `MARKETPLACE_DEVICE_ADAPTER` to a trusted Python factory path such as `app.vendor_device:create_adapter`. The factory implements `DeviceAdapter` in `backend/app/device.py`. A webhook or a poller can pass the provider payload through the same adapter. The adapter supplies a source, stable IDs, and the release window. The backend handles deduplication, availability, quotes, and booking.

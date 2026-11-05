@@ -1,8 +1,7 @@
 """Venues the marketplace can serve.
 
-Each deployment serves one venue, chosen with MARKETPLACE_VENUE. Rooms and
-standby requests carry their venue, so a request is only matched to rooms at
-the venue where it was made, even when several venues share one database.
+MARKETPLACE_VENUE selects the metadata and default fixture room for the preview.
+The public room catalog can show several venues in the same deployment.
 """
 
 import os

@@ -1,7 +1,12 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { useAccount } from "./account";
+import { ApiError, api, money } from "./market";
+import type { Room } from "./market";
 
 type Offer = {
   id: string;
@@ -17,6 +22,7 @@ type Offer = {
 
 type StandbyRequest = {
   id: string;
+  room_id: string | null;
   status: "waiting" | "offered" | "confirmed" | "expired";
   offer: Offer | null;
   booking_reference: string | null;
@@ -37,44 +43,9 @@ const formatDay = new Intl.DateTimeFormat("en-GB", {
 const formatTime = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
 });
-const formatPrice = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 });
-const storageKey = "mesh-marketplace-active-request";
-
-function savedRequestId() {
-  try {
-    return sessionStorage.getItem(storageKey);
-  } catch {
-    return null;
-  }
-}
-
-function rememberRequest(id: string | null) {
-  try {
-    if (id) sessionStorage.setItem(storageKey, id);
-    else sessionStorage.removeItem(storageKey);
-  } catch {
-    // The current request remains available in memory when storage is unavailable.
-  }
-}
 
 function localInputValue(time: Date) {
   return new Date(time.getTime() - time.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-}
-
-class ApiError extends Error {
-  constructor(message: string, readonly status: number) {
-    super(message);
-  }
-}
-
-async function api<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`/api/${path}`, { cache: "no-store", ...options });
-  if (!response.ok) {
-    const { detail } = await response.json().catch(() => ({}));
-    const message = typeof detail === "string" ? detail : detail?.[0]?.msg;
-    throw new ApiError(message ?? "Couldn’t complete that request. Please try again.", response.status);
-  }
-  return response.json();
 }
 
 function describeWindow(start: string, end: string) {
@@ -87,7 +58,37 @@ function describeWindow(start: string, end: string) {
 
 const requestPath = (id: string) => `standby-requests/${encodeURIComponent(id)}`;
 
-export default function Standby({ venueName }: { venueName: string }) {
+type StandbyProps = { room: Room; requestId?: never } | { requestId: string; room?: never };
+
+export default function Standby(props: StandbyProps) {
+  const { account, loading } = useAccount();
+  const returnTo = props.room ? `/rooms/${encodeURIComponent(props.room.id)}` : `/bookings/${encodeURIComponent(props.requestId)}`;
+
+  if (loading) return <p className="status-note" role="status">Checking your account…</p>;
+  if (!account) {
+    return (
+      <section className="room-access">
+        <h2>{props.room ? "Request this room" : "View your booking"}</h2>
+        <p>Use your renter account to send requests and manage bookings.</p>
+        <Link className="button primary" href={`/sign-in?next=${encodeURIComponent(returnTo)}`}>Sign in to continue <span aria-hidden="true">→</span></Link>
+        <Link className="room-back" href={`/register?next=${encodeURIComponent(returnTo)}`}>Create a renter account</Link>
+      </section>
+    );
+  }
+  if (account.role !== "renter") {
+    return (
+      <section className="room-access">
+        <h2>{props.room ? "Request this room" : "View your booking"}</h2>
+        <p>Room requests are available to renter accounts.</p>
+        <Link className="button secondary" href="/host">Open host dashboard</Link>
+      </section>
+    );
+  }
+  return <BookingFlow key={`${account.id}:${returnTo}`} {...props} />;
+}
+
+function BookingFlow({ room, requestId }: StandbyProps) {
+  const router = useRouter();
   const [request, setRequest] = useState<StandbyRequest | null>(null);
   const [busy, setBusy] = useState<Action | null>(null);
   const [error, setError] = useState("");
@@ -97,7 +98,7 @@ export default function Standby({ venueName }: { venueName: string }) {
   const [earliest, setEarliest] = useState("");
   const [latest, setLatest] = useState("");
   const [timeZone, setTimeZone] = useState("");
-  const [restoring, setRestoring] = useState(true);
+  const [restoring, setRestoring] = useState(Boolean(requestId));
   const id = request?.id;
   const status = request?.status;
 
@@ -106,32 +107,26 @@ export default function Standby({ venueName }: { venueName: string }) {
     setEarliest(localInputValue(new Date(now)));
     setLatest(localInputValue(new Date(now + 120 * 60_000)));
     setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone.replaceAll("_", " "));
+  }, []);
+
+  useEffect(() => {
+    if (!requestId) return;
     const controller = new AbortController();
     api<{ enabled: boolean }>("demo/config", { signal: controller.signal })
       .then(({ enabled }) => setDemoEnabled(enabled))
       .catch(() => {});
-    const stored = savedRequestId();
-    if (stored) {
-      api<StandbyRequest>(requestPath(stored), { signal: controller.signal })
-        .then((previous) => {
-          if (!controller.signal.aborted) setRequest(previous);
-        })
-        .catch((failure) => {
-          if (controller.signal.aborted) return;
-          if (failure instanceof ApiError && (failure.status === 404 || failure.status === 422)) {
-            rememberRequest(null);
-          } else {
-            setError("Couldn’t reopen your saved request. Reload this page to try again.");
-          }
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setRestoring(false);
-        });
-    } else {
-      setRestoring(false);
-    }
+    api<StandbyRequest>(requestPath(requestId), { signal: controller.signal })
+      .then((previous) => {
+        if (!controller.signal.aborted) setRequest(previous);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setError("We couldn’t open this booking. It may not be available to your account.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setRestoring(false);
+      });
     return () => controller.abort();
-  }, []);
+  }, [requestId]);
 
   useEffect(() => {
     if (!id || busy || (status !== "waiting" && status !== "offered")) return;
@@ -172,6 +167,7 @@ export default function Standby({ venueName }: { venueName: string }) {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!room || busy || request) return;
     const data = new FormData(event.currentTarget);
     const start = new Date(earliest);
     const end = new Date(latest);
@@ -187,6 +183,7 @@ export default function Standby({ venueName }: { venueName: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          room_id: room.id,
           earliest_start: start.toISOString(),
           latest_end: end.toISOString(),
           duration_minutes: duration,
@@ -196,8 +193,8 @@ export default function Standby({ venueName }: { venueName: string }) {
           preferences: String(data.get("preferences") ?? "").trim(),
         }),
       });
-      rememberRequest(next.id);
       setRequest(next);
+      router.push(`/bookings/${encodeURIComponent(next.id)}`);
     });
   }
 
@@ -228,32 +225,33 @@ export default function Standby({ venueName }: { venueName: string }) {
   function release() {
     if (!id) return;
     void act("release", async () => {
-      const result = await api<{ created: boolean; reason: string | null }>("demo/release", { method: "POST" });
+      const result = await api<{ created: boolean; reason: string | null }>("demo/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ room_id: request?.room_id ?? undefined }),
+      });
       setDemoNote(result.created ? "Demo room released. Checking for a match…" : (result.reason ?? "No new room was released."));
       setRequest(await api<StandbyRequest>(requestPath(id)));
     });
   }
 
-  function reset() {
-    rememberRequest(null);
-    setRequest(null);
-    const now = Date.now();
-    setEarliest(localInputValue(new Date(now)));
-    setLatest(localInputValue(new Date(now + 120 * 60_000)));
-    setError("");
-    setPollError(false);
-    setDemoNote("");
+  const offer = request?.offer;
+  if (requestId && !request) {
+    if (restoring) return <p className="status-note" role="status">Loading your booking…</p>;
+    return (
+      <section className="booking-detail-error">
+        <p className="error" role="alert">{error || "Booking unavailable."}</p>
+        <Link className="button secondary" href="/bookings">Back to your bookings</Link>
+      </section>
+    );
   }
 
-  const offer = request?.offer;
-
   return (
-    <div className="booking-grid">
+    <div className={requestId ? "booking-grid" : "booking-grid booking-create"}>
       <section className="panel request-panel" aria-labelledby="request-title">
         <div className="panel-heading">
-          <p className="step">01 <span>Request</span></p>
-          <h2 id="request-title">What do you need?</h2>
-          <p>Set a window that works for your group.</p>
+          <h2 id="request-title">{request ? "Your request" : "Request this room"}</h2>
+          {!request && <p>Choose a time window and a budget for your meeting.</p>}
         </div>
         {request ? (
           <div className="request-summary">
@@ -261,11 +259,11 @@ export default function Standby({ venueName }: { venueName: string }) {
               <div><dt>Window</dt><dd>{describeWindow(request.earliest_start, request.latest_end)} Oslo time</dd></div>
               <div><dt>Duration</dt><dd>{request.duration_minutes} minutes</dd></div>
               <div><dt>People</dt><dd>{request.party_size}</dd></div>
-              <div><dt>Max total price</dt><dd>{formatPrice.format(request.max_price_ore / 100)} NOK</dd></div>
+              <div><dt>Max total price</dt><dd>{money(request.max_price_ore)}</dd></div>
               {request.equipment.length > 0 && <div><dt>Equipment</dt><dd>{request.equipment.join(", ")}</dd></div>}
               {request.preferences && <div><dt>Preferences</dt><dd>{request.preferences}</dd></div>}
             </dl>
-            <button type="button" className="button secondary" onClick={reset} disabled={!!busy}>Start a new request</button>
+            {requestId && <Link className="button secondary" href={request.room_id ? `/rooms/${encodeURIComponent(request.room_id)}` : "/"}>Start a new request</Link>}
           </div>
         ) : (
         <form onSubmit={submit}>
@@ -289,16 +287,18 @@ export default function Standby({ venueName }: { venueName: string }) {
               </label>
               <label>
                 People
-                <input type="number" name="party" defaultValue="4" min="1" max="50" required />
+                <input type="number" name="party" defaultValue={Math.min(4, room?.capacity ?? 4)} min="1" max={room?.capacity ?? 50} required />
               </label>
               <label>
                 Max total price <span className="unit">NOK</span>
-                <input type="number" name="budget" defaultValue="500" min="1" max="100000" required />
+                <input type="number" name="budget" defaultValue={Math.ceil((room?.hourly_rate_ore ?? 50000) / 100)} min="1" max="100000" required />
               </label>
-              <label className="equipment">
-                <span>Equipment</span>
-                <span className="equipment-option"><input name="equipment" type="checkbox" value="screen" defaultChecked /> Screen required</span>
-              </label>
+              {room?.equipment.includes("screen") && (
+                <label className="equipment">
+                  <span>Equipment</span>
+                  <span className="equipment-option"><input name="equipment" type="checkbox" value="screen" defaultChecked /> Screen required</span>
+                </label>
+              )}
               <label className="form-wide">
                 Matching preferences <span className="unit">optional</span>
                 <input name="preferences" maxLength={500} placeholder="e.g. Earlier is better if possible" />
@@ -306,24 +306,19 @@ export default function Standby({ venueName }: { venueName: string }) {
             </div>
           </fieldset>
           <button type="submit" className="button primary" disabled={!!busy || restoring || !earliest || !latest}>
-            {busy === "submit" ? "Submitting…" : "Join standby list"}
+            {busy === "submit" ? "Submitting…" : "Send request"}
             <span aria-hidden="true">→</span>
           </button>
           {error && <p className="error" role="alert">{error}</p>}
         </form>
         )}
       </section>
-      <section className="panel status-panel" aria-labelledby="status-title">
+      {requestId && <section className="panel status-panel" aria-labelledby="status-title">
         <div className="panel-heading">
-          <p className="step">02 <span>Standby</span></p>
-          <h2 id="status-title">Your room offer</h2>
-          <p>Review a match and book if it works for you.</p>
+          <h2 id="status-title">Booking status</h2>
         </div>
         <div aria-live="polite" aria-atomic="true" className="status-body">
-          {!status && (restoring
-            ? <EmptyState icon="…" title="Checking standby status">One moment while we check for a saved request.</EmptyState>
-            : <EmptyState icon="↗" title="Offers appear here">Join the standby list to start looking for a room.</EmptyState>)}
-          {status === "waiting" && <EmptyState icon="…" title="Looking for a room">We’ll check new openings against your request. Keep this page open to see an offer.</EmptyState>}
+          {status === "waiting" && <EmptyState icon="…" title="Waiting for an opening">We’ll check new openings against your request. You can return here from your bookings.</EmptyState>}
           {status === "expired" && <EmptyState icon="↻" title="This request has expired">Start a new request to choose another time.</EmptyState>}
           {status === "confirmed" && (
             <div className="confirmed">
@@ -344,7 +339,7 @@ export default function Standby({ venueName }: { venueName: string }) {
                   <p className="offer-label">{status === "confirmed" ? "Booked room" : "Room available"}</p>
                   <h3>{offer.room_name}</h3>
                 </div>
-                <p className="price">{formatPrice.format(offer.price_ore / 100)} <span>NOK</span></p>
+                <p className="price">{money(offer.price_ore)}</p>
               </div>
               <p className="offer-time">{describeWindow(offer.start_at, offer.end_at)} <span>Oslo time</span></p>
               {status === "offered" && <p className="hold">Held until {formatTime.format(new Date(offer.expires_at))} Oslo time</p>}
@@ -373,14 +368,14 @@ export default function Standby({ venueName }: { venueName: string }) {
         {demoEnabled && status === "waiting" && (
           <div className="demo">
             <strong>Demo controls</strong>
-            <p>Simulate a room becoming available at {venueName}.</p>
+            <p>Simulate the host releasing an opening for this room.</p>
             <button type="button" className="button secondary" onClick={release} disabled={!!busy}>
               {busy === "release" ? "Releasing…" : "Release demo room"}
             </button>
             {demoNote && <p className="status-note" role="status">{demoNote}</p>}
           </div>
         )}
-      </section>
+      </section>}
     </div>
   );
 }

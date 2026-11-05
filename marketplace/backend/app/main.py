@@ -9,16 +9,18 @@ from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, R
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from . import db
+from . import db, host
+from .accounts import Account, require_browser_mutation, require_user, router as accounts_router
 from .device import FixtureDeviceAdapter, InvalidDevicePayload, demo_release_payload, load_device_adapter
 from .matching import MatchingUnavailable, select_match
-from .schemas import ReleaseResult, StandbyRequestInput, StandbyRequestStatus, VenueInfo
+from .schemas import DemoReleaseInput, ReleaseResult, Room, StandbyRequestInput, StandbyRequestStatus, VenueInfo
 from .venues import current_venue
 
-# Fail at startup if MARKETPLACE_VENUE names an unknown venue.
 current_venue()
 
-app = FastAPI(title="Meeting Room Marketplace API")
+app = FastAPI(title="Room Marketplace API")
+app.include_router(accounts_router)
+app.include_router(host.router)
 logger = logging.getLogger(__name__)
 device_bearer = HTTPBearer(auto_error=False)
 
@@ -29,8 +31,17 @@ async def database_unavailable(_request: Request, error: psycopg.Error) -> JSONR
     return JSONResponse(status_code=503, content={"detail": "Database unavailable"})
 
 
-def request_status(request_id: str) -> dict:
-    status = db.get_request(request_id)
+def require_renter(account: Annotated[Account, Depends(require_user)]) -> Account:
+    if account.role != "renter":
+        raise HTTPException(status_code=403, detail="A renter account is required")
+    return account
+
+
+Renter = Annotated[Account, Depends(require_renter)]
+
+
+def request_status(request_id: str, account: Account) -> dict:
+    status = db.get_request(request_id, user_id=account.id)
     if status is None:
         raise HTTPException(status_code=404, detail="Standby request not found")
     return status
@@ -72,7 +83,7 @@ def ingest_release(event: dict | None, background_tasks: BackgroundTasks) -> dic
     require_database()
     result = db.record_release(event)
     if result["created"]:
-        for request_id in db.list_pending_request_ids():
+        for request_id in db.list_pending_request_ids(event["external_room_id"]):
             background_tasks.add_task(match_request, request_id)
     return result
 
@@ -101,15 +112,37 @@ def ready() -> dict[str, str]:
     return {"status": "ready"}
 
 
+@app.get("/rooms", response_model=list[Room], dependencies=[Depends(require_database)])
+def rooms() -> list[dict]:
+    return db.list_rooms()
+
+
+@app.get("/rooms/{room_id}", response_model=Room, dependencies=[Depends(require_database)])
+def room(room_id: str) -> dict:
+    listing = db.get_room(room_id)
+    if listing is None:
+        raise HTTPException(status_code=404, detail="Room not found")
+    return listing
+
+
+@app.get("/standby-requests", response_model=list[StandbyRequestStatus])
+def standby_history(account: Renter, response: Response) -> list[dict]:
+    response.headers["Cache-Control"] = "no-store"
+    return db.list_requests(account.id)
+
+
 @app.post(
     "/standby-requests",
     status_code=201,
     response_model=StandbyRequestStatus,
-    dependencies=[Depends(require_database)],
+    dependencies=[Depends(require_browser_mutation)],
 )
-def create_standby_request(body: StandbyRequestInput, background_tasks: BackgroundTasks) -> dict:
-    request_id = db.create_request({**body.model_dump(), "venue": current_venue().id})
-    status = request_status(request_id)
+def create_standby_request(body: StandbyRequestInput, background_tasks: BackgroundTasks, account: Renter) -> dict:
+    try:
+        request_id = db.create_request(body.model_dump(), account.id)
+    except db.NotFound as exc:
+        raise HTTPException(status_code=404, detail="Room not found") from exc
+    status = request_status(request_id, account)
     background_tasks.add_task(match_request, request_id)
     return status
 
@@ -117,20 +150,19 @@ def create_standby_request(body: StandbyRequestInput, background_tasks: Backgrou
 @app.get(
     "/standby-requests/{request_id}",
     response_model=StandbyRequestStatus,
-    dependencies=[Depends(require_database)],
 )
-def get_standby_request(request_id: UUID, response: Response) -> dict:
+def get_standby_request(request_id: UUID, response: Response, account: Renter) -> dict:
     response.headers["Cache-Control"] = "no-store"
-    return request_status(str(request_id))
+    return request_status(str(request_id), account)
 
 
 @app.post(
     "/standby-requests/{request_id}/retry",
     response_model=StandbyRequestStatus,
-    dependencies=[Depends(require_database)],
+    dependencies=[Depends(require_browser_mutation)],
 )
-def retry_standby_request(request_id: UUID, background_tasks: BackgroundTasks) -> dict:
-    status = request_status(str(request_id))
+def retry_standby_request(request_id: UUID, background_tasks: BackgroundTasks, account: Renter) -> dict:
+    status = request_status(str(request_id), account)
     if status["status"] == "waiting":
         background_tasks.add_task(match_request, str(request_id))
     return status
@@ -140,13 +172,13 @@ def retry_standby_request(request_id: UUID, background_tasks: BackgroundTasks) -
     "/standby-requests/{request_id}/offers/{offer_id}/accept",
     response_model=StandbyRequestStatus,
     responses={409: {"description": "Offer expired or no longer available"}},
-    dependencies=[Depends(require_database)],
+    dependencies=[Depends(require_browser_mutation)],
 )
 def accept_standby_offer(
-    request_id: UUID, offer_id: UUID, background_tasks: BackgroundTasks
+    request_id: UUID, offer_id: UUID, background_tasks: BackgroundTasks, account: Renter
 ) -> dict | Response:
     try:
-        return db.accept_offer(str(request_id), str(offer_id))
+        return db.accept_offer(str(request_id), str(offer_id), user_id=account.id)
     except db.NotFound as exc:
         raise HTTPException(status_code=404, detail="Standby request or offer not found") from exc
     except db.Conflict:
@@ -158,21 +190,27 @@ def accept_standby_offer(
         )
 
 
-@app.get("/venue", response_model=VenueInfo)
-def get_venue() -> dict[str, str]:
-    return current_venue().public()
-
-
 @app.get("/demo/config")
 def demo_config() -> dict[str, bool]:
     return {"enabled": demo_enabled()}
 
 
-@app.post("/demo/release", response_model=ReleaseResult)
-def demo_release(background_tasks: BackgroundTasks) -> dict:
+@app.get("/venue", response_model=VenueInfo)
+def get_venue() -> dict[str, str]:
+    return current_venue().public()
+
+
+@app.post("/demo/release", response_model=ReleaseResult, dependencies=[Depends(require_browser_mutation)])
+def demo_release(
+    background_tasks: BackgroundTasks, _account: Renter, body: DemoReleaseInput | None = None
+) -> dict:
     if not demo_enabled():
         raise HTTPException(status_code=404, detail="Demo release is disabled")
-    event = FixtureDeviceAdapter().normalize_release(demo_release_payload(current_venue().demo_room_id))
+    room_id = body.room_id if body else None
+    if room_id is not None and db.get_room(room_id) is None:
+        raise HTTPException(status_code=404, detail="Room not found")
+    payload = demo_release_payload(room_id or current_venue().demo_room_id)
+    event = FixtureDeviceAdapter().normalize_release(payload)
     return ingest_release(event, background_tasks)
 
 

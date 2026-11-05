@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg.rows import dict_row
 
-from .venues import venue
+from .venues import VENUES
 
 
 class NotFound(Exception):
@@ -20,9 +20,10 @@ class Conflict(Exception):
 _MIGRATION_DIR = Path(__file__).with_name("migrations")
 _MIGRATION_LOCK = 982347119
 _MAX_CANDIDATES = 12
+_ROOM_COLUMNS = "id, name, city, venue_name AS venue, kind, description, image_key, capacity, equipment, hourly_rate_ore"
 _OPENING_COLUMNS = """
     o.id AS opening_id, o.room_id, r.venue, o.start_at AS opening_start, o.end_at AS opening_end,
-    r.name AS room_name, r.capacity, r.equipment,
+    r.name AS room_name, r.city AS room_city, r.capacity, r.equipment, r.published,
     r.hourly_rate_ore, r.minimum_hourly_rate_ore, r.maximum_hourly_rate_ore
 """
 
@@ -87,19 +88,47 @@ def check_ready() -> None:
         connection.execute("SELECT 1")
 
 
-def create_request(data: dict) -> str:
+def list_rooms() -> list[dict]:
+    with _connect() as connection:
+        return connection.execute(
+            f"""
+            SELECT {_ROOM_COLUMNS} FROM marketplace_rooms
+            WHERE published AND city IS NOT NULL
+            ORDER BY id
+            """
+        ).fetchall()
+
+
+def get_room(room_id: str) -> dict | None:
+    with _connect() as connection:
+        return connection.execute(
+            f"SELECT {_ROOM_COLUMNS} FROM marketplace_rooms WHERE id = %s AND published AND city IS NOT NULL",
+            (room_id,),
+        ).fetchone()
+
+
+def create_request(data: dict, user_id: UUID) -> str:
     request_id = uuid4()
     with _connect() as connection:
+        room_id = data["room_id"]
+        venue_id = None
+        if room_id is not None:
+            room = connection.execute(
+                "SELECT venue FROM marketplace_rooms WHERE id = %s AND published AND city IS NOT NULL FOR KEY SHARE",
+                (room_id,),
+            ).fetchone()
+            if room is None:
+                raise NotFound("Room not found")
+            venue_id = room["venue"]
         connection.execute(
             """
             INSERT INTO marketplace_requests
-                (id, venue, earliest_start, latest_end, duration_minutes, party_size, equipment,
-                 max_price_ore, preferences)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (id, earliest_start, latest_end, duration_minutes, party_size, equipment,
+                 max_price_ore, preferences, user_id, room_id, venue)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 request_id,
-                data["venue"],
                 _datetime(data["earliest_start"]),
                 _datetime(data["latest_end"]),
                 data["duration_minutes"],
@@ -107,16 +136,28 @@ def create_request(data: dict) -> str:
                 _equipment(data["equipment"]),
                 data["max_price_ore"],
                 data["preferences"],
+                user_id,
+                room_id,
+                venue_id,
             ),
         )
     return str(request_id)
 
 
-def _request(connection, request_id, *, lock=False):
-    query = "SELECT * FROM marketplace_requests WHERE id = %s"
+def _request(connection, request_id, *, user_id=None, lock=False):
+    query = """
+        SELECT request.*, room.name AS room_name
+        FROM marketplace_requests request
+        LEFT JOIN marketplace_rooms room ON room.id = request.room_id
+        WHERE request.id = %s
+    """
+    parameters = (request_id,)
+    if user_id is not None:
+        query += " AND request.user_id = %s"
+        parameters += (user_id,)
     if lock:
-        query += " FOR UPDATE"
-    return connection.execute(query, (request_id,)).fetchone()
+        query += " FOR UPDATE OF request"
+    return connection.execute(query, parameters).fetchone()
 
 
 def _active_offer(connection, request_id, now):
@@ -125,7 +166,7 @@ def _active_offer(connection, request_id, now):
         SELECT o.*, r.name AS room_name, r.photo AS room_photo
         FROM marketplace_offers o
         JOIN marketplace_rooms r ON r.id = o.room_id
-        WHERE o.request_id = %s AND (o.confirmed_at IS NOT NULL OR o.expires_at > %s)
+        WHERE o.request_id = %s AND (o.confirmed_at IS NOT NULL OR (r.published AND o.expires_at > %s))
         ORDER BY o.confirmed_at DESC NULLS LAST, o.created_at DESC
         LIMIT 1
         """,
@@ -134,7 +175,7 @@ def _active_offer(connection, request_id, now):
 
 
 def _status(connection, request, now):
-    data = _json(request)
+    data = _json({key: value for key, value in request.items() if key != "user_id"})
     data.update(status="waiting", offer=None, booking_reference=None)
     offer = _active_offer(connection, request["id"], now)
     if offer:
@@ -150,13 +191,29 @@ def _status(connection, request, now):
     return data
 
 
-def get_request(request_id: str) -> dict | None:
+def get_request(request_id: str, *, user_id: UUID | None = None) -> dict | None:
     with _connect() as connection:
-        request = _request(connection, request_id)
+        request = _request(connection, request_id, user_id=user_id)
         return _status(connection, request, datetime.now(UTC)) if request else None
 
 
-def list_pending_request_ids() -> list[str]:
+def list_requests(user_id: UUID) -> list[dict]:
+    with _connect() as connection:
+        requests = connection.execute(
+            """
+            SELECT request.*, room.name AS room_name
+            FROM marketplace_requests request
+            LEFT JOIN marketplace_rooms room ON room.id = request.room_id
+            WHERE request.user_id = %s
+            ORDER BY request.created_at DESC, request.id DESC
+            """,
+            (user_id,),
+        ).fetchall()
+        now = datetime.now(UTC)
+        return [_status(connection, request, now) for request in requests]
+
+
+def list_pending_request_ids(room_id: str) -> list[str]:
     with _connect() as connection:
         return [
             str(row["id"])
@@ -164,14 +221,19 @@ def list_pending_request_ids() -> list[str]:
                 """
                 SELECT r.id
                 FROM marketplace_requests r
-                WHERE r.latest_end >= GREATEST(r.earliest_start, now()) +
+                WHERE r.user_id IS NOT NULL
+                  AND (r.room_id IS NULL OR r.room_id = %s)
+                  AND r.latest_end >= GREATEST(r.earliest_start, now()) +
                       r.duration_minutes * interval '1 minute'
                   AND NOT EXISTS (
                       SELECT 1 FROM marketplace_offers o
-                      WHERE o.request_id = r.id AND (o.confirmed_at IS NOT NULL OR o.expires_at > now())
+                      JOIN marketplace_rooms room ON room.id = o.room_id
+                      WHERE o.request_id = r.id
+                        AND (o.confirmed_at IS NOT NULL OR (room.published AND o.expires_at > now()))
                   )
                 ORDER BY r.created_at
-                """
+                """,
+                (room_id,),
             )
         ]
 
@@ -195,11 +257,13 @@ def record_release(event: dict) -> dict:
         raise RuntimeError("Turnaround cannot be negative")
     with _connect() as connection:
         room = connection.execute(
-            "SELECT id FROM marketplace_rooms WHERE id = %s FOR UPDATE",
+            "SELECT id, published FROM marketplace_rooms WHERE id = %s FOR UPDATE",
             (event["external_room_id"],),
         ).fetchone()
         if not room:
             return {"created": False, "opening_id": None, "reason": "unknown_room"}
+        if event["source"] == "host" and not room["published"]:
+            return {"created": False, "opening_id": None, "reason": "room_unpublished"}
 
         previous = _existing_opening(connection, event)
         if previous:
@@ -264,7 +328,11 @@ def _busy(connection, room_id, start_at, end_at, now, exclude=None):
 
 
 def _candidate(opening, request, start_at, end_at, now):
-    if opening["venue"] != request["venue"]:
+    if not opening["published"] or opening["room_city"] is None:
+        return None
+    if request["room_id"] is not None and opening["room_id"] != request["room_id"]:
+        return None
+    if request["venue"] is not None and opening["venue"] != request["venue"]:
         return None
     if opening["capacity"] < request["party_size"] or not set(request["equipment"]).issubset(opening["equipment"]):
         return None
@@ -306,11 +374,16 @@ def list_candidates(request_id: str) -> list[dict]:
             SELECT {_OPENING_COLUMNS}
             FROM marketplace_openings o
             JOIN marketplace_rooms r ON r.id = o.room_id
-            WHERE r.venue = %s AND o.end_at > GREATEST(%s, %s) AND o.start_at < %s
-              AND r.capacity >= %s AND r.equipment @> %s::text[]
+            WHERE o.end_at > GREATEST(%s, %s) AND o.start_at < %s
+              AND r.published AND r.city IS NOT NULL AND r.capacity >= %s AND r.equipment @> %s::text[]
+              AND o.room_id = COALESCE(%s, o.room_id)
+              AND (%s::text IS NULL OR r.venue = %s)
             ORDER BY o.start_at, o.id
             """,
-            (request["venue"], now, request["earliest_start"], request["latest_end"], request["party_size"], request["equipment"]),
+            (
+                now, request["earliest_start"], request["latest_end"], request["party_size"],
+                request["equipment"], request["room_id"], request["venue"], request["venue"],
+            ),
         ).fetchall()
         duration = timedelta(minutes=request["duration_minutes"])
         candidates = []
@@ -367,14 +440,14 @@ def create_offer(request_id: str, candidate: dict, reason: str, provider: str) -
         return _json({**offer, "room_name": opening["room_name"]})
 
 
-def accept_offer(request_id: str, offer_id: str) -> dict:
+def accept_offer(request_id: str, offer_id: str, *, user_id: UUID) -> dict:
     with _connect() as connection:
-        request = _request(connection, request_id, lock=True)
+        request = _request(connection, request_id, user_id=user_id, lock=True)
         if not request:
             raise NotFound("Standby request not found")
         offer = connection.execute(
             """
-            SELECT o.*, w.start_at AS opening_start, w.end_at AS opening_end
+            SELECT o.*, w.start_at AS opening_start, w.end_at AS opening_end, r.published, r.venue
             FROM marketplace_offers o
             JOIN marketplace_openings w ON w.id = o.opening_id
             JOIN marketplace_rooms r ON r.id = o.room_id
@@ -388,17 +461,21 @@ def accept_offer(request_id: str, offer_id: str) -> dict:
         now = datetime.now(UTC)
         if offer["confirmed_at"]:
             return _status(connection, request, now)
+        if not offer["published"]:
+            raise Conflict("The room is no longer available.")
         if offer["expires_at"] <= now:
             raise Conflict("This offer expired. Check your request for a new match.")
         if not offer["opening_start"] <= offer["start_at"] < offer["end_at"] <= offer["opening_end"]:
             raise Conflict("The room is no longer available at that time.")
         if _busy(connection, offer["room_id"], offer["start_at"], offer["end_at"], now, exclude=offer_id):
             raise Conflict("The room is no longer available at that time.")
+        known_venue = VENUES.get(offer["venue"])
+        prefix = known_venue.booking_prefix if known_venue else "ROOM"
         connection.execute(
             """
             UPDATE marketplace_offers SET confirmed_at = %s, booking_reference = %s
             WHERE id = %s
             """,
-            (now, venue(request["venue"]).booking_prefix + "-" + offer["id"].hex[:12].upper(), offer_id),
+            (now, prefix + "-" + offer["id"].hex[:12].upper(), offer_id),
         )
         return _status(connection, request, now)

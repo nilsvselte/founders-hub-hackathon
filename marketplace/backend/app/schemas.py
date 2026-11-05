@@ -5,9 +5,24 @@ from uuid import UUID
 from pydantic import AwareDatetime, BaseModel, Field, StringConstraints, field_validator, model_validator
 
 EquipmentName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=50)]
+RoomId = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=128)]
+
+
+class Room(BaseModel):
+    id: str
+    name: str
+    city: str
+    venue: str
+    kind: str
+    description: str
+    image_key: str
+    capacity: int
+    equipment: list[str]
+    hourly_rate_ore: int
 
 
 class StandbyRequestInput(BaseModel):
+    room_id: RoomId | None = None
     earliest_start: AwareDatetime
     latest_end: AwareDatetime
     duration_minutes: int = Field(ge=1, le=720)
@@ -44,6 +59,8 @@ class OfferStatus(BaseModel):
 
 class StandbyRequestStatus(BaseModel):
     id: UUID
+    room_id: str | None
+    room_name: str | None
     status: Literal["waiting", "offered", "confirmed", "expired"]
     offer: OfferStatus | None = None
     booking_reference: str | None = None
@@ -60,6 +77,10 @@ class ReleaseResult(BaseModel):
     created: bool
     opening_id: UUID | None = None
     reason: str | None = None
+
+
+class DemoReleaseInput(BaseModel):
+    room_id: RoomId | None = None
 
 
 class VenueInfo(BaseModel):
