@@ -1,0 +1,18 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+
+# Dependencies, caches, and build output
+node_modules/
+.venv/
+__pycache__/
+.pytest_cache/
+.next/
+dist/
+build/
+coverage/
+
+# Local files
+.DS_Store
+*.log
