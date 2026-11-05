@@ -6,15 +6,20 @@
   padding: 14px; border: 1px solid var(--border); border-radius: var(--r-md);
   background: var(--surface-glass); text-align: left;
 }
-.standby-launch label { display: grid; gap: 5px; min-width: 0; color: var(--muted); font-size: 13px; }
+.standby-launch label { display: grid; gap: 6px; min-width: 0; color: var(--ink-soft); font-size: 13px; font-weight: 500; }
 .standby-launch input {
   width: 100%; min-width: 0; min-height: 46px; padding: 8px 11px;
   background: var(--ground); color: var(--ink); font: 500 16px var(--text);
   border: 1px solid var(--border); border-radius: var(--r-sm);
+  color-scheme: dark; transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
 }
-.standby-launch .btn { min-height: 46px; }
-.standby-launch-note { margin: 10px auto 0; color: var(--muted); font-size: 13px; }
-.standby-paths { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 24px; margin-top: 19px; font-size: 14px; }
+.standby-launch input:hover { border-color: rgba(195, 210, 240, 0.32); }
+.standby-launch input:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(233, 182, 56, 0.28); }
+.standby-launch input::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.8; }
+.standby-launch .btn { min-height: 46px; white-space: nowrap; }
+.standby-launch-note { max-width: 35rem; margin: 12px auto 0; color: var(--muted); font-size: 13px; }
+.standby-paths { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 0; margin-top: 20px; font-size: 14px; }
+.standby-paths .link + .link::before { content: "·"; display: inline-block; margin: 0 14px; color: var(--dim); text-decoration: none; }
 
 /* How: step numbers */
 .step-n { display: inline-block; width: 1.4em; font-variant-numeric: tabular-nums; color: var(--accent); opacity: 0.5; }
@@ -60,6 +65,10 @@
   .board .hint { font-size: 13px; }
 }
 @media (max-width: 480px) {
-  .standby-launch { grid-template-columns: minmax(0, 1fr) minmax(0, 6rem); }
-  .standby-launch .btn { grid-column: 1 / -1; }
+  .standby-launch { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 16px; }
+  .standby-launch .btn { width: 100%; }
+}
+@media (max-width: 360px) {
+  .standby-paths { flex-direction: column; gap: 14px; }
+  .standby-paths .link + .link::before { display: none; }
 }
