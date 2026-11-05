@@ -13,7 +13,7 @@ standbyroom is a marketplace for meeting rooms across venues. Renters browse lis
 | `website/` | Public landing page that explains the product and directs buyers to the marketplace. |
 | `marketplace/frontend/` | Next.js marketplace for browsing rooms, renter bookings, and host listings. |
 | `marketplace/backend/` | FastAPI app served by Uvicorn. Owns accounts, inventory, pricing, holds, bookings, and the Claude agent’s tools. Uses PostgreSQL. |
-| `device/` | Atech ESP32 firmware and code that passes the button press to the marketplace. This folder starts empty. |
+| `device/` | Atech ESP32 sensors (presence, CO₂, buttons) and a FastAPI device server that tracks room occupancy and exposes it to the marketplace. See [device/README.md](device/README.md). |
 
 ## Hackathon demo
 
@@ -21,6 +21,15 @@ Use one physical button, two sample rooms, and one standby request. Show that th
 
 Keep availability, price limits, and booking confirmation in the marketplace so the agent works from the same rules as the rest of the product. Edit this guide directly. `CLAUDE.md` links to it.
 
-The device API contract is still open. Put its translation behind `DeviceAdapter` in the marketplace backend. A fixture drives the same release flow locally. Claude chooses among eligible openings and explains the fit. The backend controls the quote, hold, and booking.
+Claude chooses among eligible openings and explains the fit. The backend controls the quote, hold, and booking.
+
+## Device integration
+
+The device API contract is defined in [device/README.md](device/README.md). `device/` reports physical facts: whether a room is occupied, since when, and whether a staff member pressed **Release room**. It does not know about bookings. The marketplace owns bookings and decides on no-shows, overstays, auto-release, and pricing.
+
+- **Push:** the device server posts `room.occupancy_changed` and `room.release_requested` to the existing `POST /internal/device/events`. The marketplace should handle both types behind `DeviceAdapter`. It maps a release request to the room's current block, and it can treat an empty room during a booked block as a ghost-booking signal.
+- **Pull:** the marketplace can call the device server on port 8100. `GET /v1/rooms/{room_id}` returns current occupancy, and `GET /v1/rooms/{room_id}/presence?from=&to=` reports whether anyone was in the room during a booking window. Check `coverage` before treating an empty window as a no-show.
+
+Room IDs are shared, so the device server uses the marketplace's room IDs, such as `digs-demo-1`.
 
 See the [marketplace README](marketplace/README.md) for local startup commands.

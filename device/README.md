@@ -1,0 +1,92 @@
+# device: room occupancy sensing
+
+`device/` tells the marketplace whether a room is physically in use. Atech boards in each room send sensor readings over WiFi to the device server. The server works out occupancy and exposes it to the marketplace.
+
+## Ownership
+
+`device/` owns sensors, firmware, and occupancy: whether a room is occupied, since when, and whether the data can be trusted. It does not know what a booking is.
+
+The marketplace owns bookings, no-show and overstay decisions, auto-release, and pricing. To detect a ghost booking, the marketplace compares its own booking with the occupancy data from `device/`.
+
+| Folder | Owns |
+| --- | --- |
+| `firmware/` | Atech project (`project.yaml`) for the ESP32-S3 board. The board sends raw readings and stays simple. |
+| `server/` | FastAPI app with SQLite, run with uv. Ingests telemetry, computes occupancy, serves the room API, and pushes events to the marketplace. |
+
+## Hardware
+
+Each board uses the following modules:
+
+- **ToF sensor (VL53L5CX, 8×8):** the main presence signal. It measures 64 distances, and a person shows up as zones closer than the calibrated empty-room baseline. It is not a camera.
+- **CO₂ sensor (SCD40):** a supporting signal, also used for display.
+- **Buttons:** manual actions. Button 1 is **Release room**.
+- **LED grid (optional):** shows what the sensor sees, green for empty and red for occupied.
+
+The board sends readings about every 3 seconds. The server makes every decision, so changing thresholds does not need a reflash. WiFi is 2.4 GHz only. A phone hotspot works, and on an iPhone you must turn on **Maximize Compatibility**. The board and the device server's machine must be on the same network.
+
+## API contract
+
+All timestamps are ISO 8601 with a timezone offset. Room IDs are the marketplace's room IDs, such as `digs-demo-1`. The device server listens on port **8100**.
+
+### 1. Board → device server (internal to `device/`)
+
+`POST /v1/telemetry` with `Authorization: Bearer <device token>`
+
+```json
+{"device_id": "dev-1", "seq": 812, "uptime_ms": 2436000,
+ "tof_mm": [1830, 1825, "... 64 values, row-major"],
+ "co2_ppm": 640, "temp_c": 22.4, "rh_pct": 38.1,
+ "buttons": {"release": 1}}
+```
+
+`buttons` counts presses since the previous report. A press is also sent at once. The response is `{"ok": true, "room_id": "digs-demo-1", "occupied": true}`, and the board uses `occupied` for the LED.
+
+Devices map to rooms in the server's `.env`, for example `DEVICES=dev-1:digs-demo-1`. A room can have several devices, and it counts as occupied when any of them sees someone.
+
+`POST /v1/rooms/{room_id}/calibrate` stores the current ToF frame as the empty-room baseline. Run it once per room while the room is empty.
+
+### 2. Marketplace → device server (marketplace pulls)
+
+`GET /v1/rooms` lists every room. `GET /v1/rooms/{room_id}` returns one room:
+
+```json
+{"room_id": "digs-demo-1", "occupied": false, "since": "2026-11-05T17:02:10+01:00",
+ "online": true, "last_seen_at": "2026-11-05T17:12:03+01:00",
+ "co2_ppm": 612, "temp_c": 22.4, "devices": ["dev-1"]}
+```
+
+`online` is false when no device for the room has reported in the last 30 seconds. `since` is when `occupied` last changed.
+
+`GET /v1/rooms/{room_id}/presence?from=<ISO>&to=<ISO>` answers the no-show question: "was anyone in the room between these times?"
+
+```json
+{"room_id": "digs-demo-1", "from": "...", "to": "...",
+ "any_presence": false, "occupied_seconds": 0,
+ "first_seen_at": null, "last_seen_at": null, "coverage": 0.98}
+```
+
+`coverage` is the share of the window covered by device data, from 0 to 1. A room with low coverage was offline, so `any_presence: false` there does not prove a no-show.
+
+### 3. Device server → marketplace (device pushes)
+
+`POST {MARKETPLACE_URL}/internal/device/events` with `Authorization: Bearer <MARKETPLACE_DEVICE_TOKEN>`. This is the marketplace's existing endpoint.
+
+The device server sends this event when a room's occupancy changes:
+
+```json
+{"type": "room.occupancy_changed", "event_id": "<uuid>", "external_room_id": "digs-demo-1",
+ "occupied": false, "changed_at": "2026-11-05T17:02:10+01:00"}
+```
+
+It sends this event when staff press the release button:
+
+```json
+{"type": "room.release_requested", "event_id": "<uuid>", "external_room_id": "digs-demo-1",
+ "requested_at": "2026-11-05T17:02:10+01:00"}
+```
+
+The device server cannot send `room.released`, because it does not know the booking's `block_id` or `scheduled_end_at`. The marketplace maps `room.release_requested` to the current block and decides whether to release it. Failed sends are retried with the same `event_id`, so the marketplace can deduplicate. The current `FixtureDeviceAdapter` returns `None` for these types, so the existing endpoint accepts them without breaking until the marketplace handles them.
+
+## Run locally
+
+Not built yet. Install and run commands go here once `server/` and `firmware/` exist.
