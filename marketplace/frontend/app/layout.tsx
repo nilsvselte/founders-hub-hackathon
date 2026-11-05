@@ -8,11 +8,16 @@ export const metadata: Metadata = {
   title: "standbyroom · Meeting rooms",
   description: "Browse and request meeting rooms across venues.",
   applicationName: "standbyroom",
-  appleWebApp: { capable: true, title: "standbyroom", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "standbyroom", statusBarStyle: "black-translucent" },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
   themeColor: "#0A0E18",
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

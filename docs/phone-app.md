@@ -54,3 +54,14 @@ cloudflared tunnel --url http://localhost:3000
 ```
 
 Open the printed `https://….trycloudflare.com` URL on the phone. The URL changes every run, so a home-screen install and its push subscription only last as long as that tunnel; reinstall after restarting it.
+
+## Feels like an app from the home screen
+
+- iOS status bar is `black-translucent` and the viewport is `viewport-fit=cover`, so the dark page runs under the notch. `app/globals.css` pads the top bar with `env(safe-area-inset-top)` and the page bottom with `env(safe-area-inset-bottom)`.
+- In `@media (display-mode: standalone)` the top bar is sticky and the page doesn't rubber-band.
+- Phone inputs are ≥16px (no zoom on focus); nav and sign-in targets are ≥44px on touch screens; no tap highlight.
+- iOS caches the home-screen icon and mode: after a change, delete the icon and add it again.
+
+## The landing page (website/)
+
+`website/` has its own icons (`icon.svg`, `apple-touch-icon.png`, `icon-192/512.png`, copied from the marketplace), `manifest.webmanifest` (`display: browser`) and theme colour. It is not the app: a browser won't let its manifest start on the marketplace's origin. On phones the hero shows "Use it as a phone app: open it, then Share → Add to Home Screen", linking to the marketplace.
