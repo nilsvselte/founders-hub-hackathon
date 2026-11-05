@@ -6,6 +6,7 @@ import type { FormEvent } from "react";
 type Offer = {
   id: string;
   room_name: string;
+  room_photo: string | null;
   start_at: string;
   end_at: string;
   price_ore: number;
@@ -335,6 +336,9 @@ export default function Standby({ venueName }: { venueName: string }) {
           )}
           {offer && (status === "offered" || status === "confirmed") && (
             <div className="offer">
+              {offer.room_photo && (
+                <img className="offer-photo" src={`/rooms/${encodeURIComponent(offer.room_photo)}`} alt="" />
+              )}
               <div className="offer-top">
                 <div>
                   <p className="offer-label">{status === "confirmed" ? "Booked room" : "Room available"}</p>

@@ -184,7 +184,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 }
 
 .confirmed { display: flex; align-items: center; gap: 10px; margin-bottom: 13px; }
-.offer { padding: 14px; border: 1px solid #d4e3cb; border-radius: 8px; background: #f4f7ee; }
+.offer { padding: 14px; border: 1px solid #d4e3cb; border-radius: 8px; background: #f4f7ee; overflow: hidden; }
+.offer-photo { display: block; width: calc(100% + 28px); max-width: none; height: auto; aspect-ratio: 16 / 9; margin: -14px -14px 12px; object-fit: cover; }
 .offer-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .offer-label { color: var(--muted); }
 .offer .price { flex-shrink: 0; font-size: 22px; font-weight: 730; letter-spacing: -.035em; }

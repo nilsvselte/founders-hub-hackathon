@@ -33,6 +33,7 @@ class StandbyRequestInput(BaseModel):
 class OfferStatus(BaseModel):
     id: UUID
     room_name: str
+    room_photo: str | None = None
     start_at: AwareDatetime
     end_at: AwareDatetime
     price_ore: int
