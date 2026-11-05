@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesh standby</title>
+<meta name="description" content="Tell it what you need. It finds the room. Meeting rooms released early at Digs, Trondheim, matched to you by an agent.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;1,500&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="container nav-inner">
+    <a class="wordmark" href="#top" data-product>Mesh standby</a>
+    <nav aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="#spaces">For spaces</a>
+      <a href="#device">The button</a>
+    </nav>
+    <a class="btn btn-primary btn-sm" href="#marketplace">Open marketplace</a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" id="top">
+    <svg class="sky" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <defs>
+        <radialGradient id="moonGlow" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stop-color="#F4F1E6" stop-opacity=".22"/>
+          <stop offset="1" stop-color="#F4F1E6" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1A2540"/>
+          <stop offset="1" stop-color="#0F1420"/>
+        </linearGradient>
+      </defs>
+      <g class="stars" fill="#F4F1E6">
+        <circle cx="120" cy="90" r="1.2"/><circle cx="260" cy="170" r=".9"/><circle cx="410" cy="60" r="1.1"/><circle cx="560" cy="140" r=".8"/>
+        <circle cx="700" cy="40" r="1.3"/><circle cx="880" cy="120" r=".9"/><circle cx="1010" cy="70" r="1"/><circle cx="1200" cy="160" r="1.2"/>
+        <circle cx="1330" cy="80" r=".8"/><circle cx="60" cy="240" r=".9"/><circle cx="1380" cy="250" r="1"/><circle cx="340" cy="300" r=".7"/>
+        <circle cx="1100" cy="300" r=".8"/><circle cx="640" cy="230" r=".7"/><circle cx="790" cy="260" r=".9"/>
+      </g>
+      <circle cx="1150" cy="230" r="90" fill="url(#moonGlow)"/>
+      <circle cx="1150" cy="230" r="26" fill="#E8E4D2" opacity=".85"/>
+      <path d="M0 610 L120 540 L210 575 L330 470 L430 545 L520 505 L610 560 L720 520 L800 555 L900 470 L1010 540 L1110 500 L1220 560 L1330 490 L1440 540 L1440 900 L0 900Z" fill="#1A2133"/>
+      <path d="M0 650 L90 610 L180 640 L300 590 L420 640 L560 600 L680 650 L820 615 L960 650 L1080 605 L1200 645 L1320 600 L1440 640 L1440 900 L0 900Z" fill="#141B2B"/>
+      <rect x="0" y="680" width="1440" height="220" fill="url(#water)"/>
+      <rect x="1140" y="690" width="20" height="2" fill="#E8E4D2" opacity=".4"/><rect x="1128" y="704" width="44" height="2" fill="#E8E4D2" opacity=".25"/><rect x="1136" y="720" width="28" height="2" fill="#E8E4D2" opacity=".18"/>
+    </svg>
+
+    <div class="container hero-copy">
+      <p class="where">Live at Digs, Trondheim</p>
+      <h1>Tell it what you need.<br><em>It finds the room.</em></h1>
+      <p class="lead">Set your time, group size, equipment, budget and how flexible you are. An agent ranks every room at Digs against them, and books the best fit the moment one frees up.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#marketplace">Set my preferences</a>
+        <a class="btn btn-ghost" href="#spaces">Sell idle room time</a>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="board" aria-label="Live demo: the agent matching rooms to a request">
+        <div class="board-col">
+          <div class="board-head"><h2 class="board-title">Your preferences</h2><span class="demo-tag">Demo</span></div>
+          <ul class="chips">
+            <li><b>When</b> today, 15:15–16:30</li>
+            <li><b>Length</b> 30–60 min</li>
+            <li><b>People</b> 3</li>
+            <li><b>Needs</b> screen, whiteboard</li>
+            <li><b>Budget</b> up to 300 kr</li>
+            <li><b>Flexible</b> ±15 min</li>
+          </ul>
+          <div class="log" id="log" aria-live="polite"><span>Agent: watching 6 rooms for you…</span></div>
+          <div class="board-btns">
+            <button class="btn btn-gold" id="rel" type="button">Release room</button>
+            <button class="btn btn-ghost btn-sm" id="reset" type="button">Reset</button>
+          </div>
+          <p class="hint">Press it the way staff do when a meeting ends early.</p>
+        </div>
+        <div class="board-col">
+          <div class="board-head"><h2 class="board-title">Ranked for you</h2></div>
+          <ol class="matches" id="matches">
+            <li class="m"><span class="rank">1</span><div><strong>Nidelva</strong> · 16:30–17:15<span class="why">8 seats, screen. Later than you wanted.</span></div><span class="fit">71%</span></li>
+            <li class="m"><span class="rank">2</span><div><strong>Phone booth 2</strong> · now<span class="why">Free now, but seats 1.</span></div><span class="fit">38%</span></li>
+          </ol>
+          <div class="quote" id="quote" hidden>
+            <div><span class="q-room">Bakklandet · 15:25–16:00</span><span class="q-price">180 kr <s>320 kr</s></span><span class="q-note">Held for you for 2 minutes</span></div>
+            <button class="btn btn-primary btn-sm" id="accept" type="button">Accept</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="problem">
+    <div class="container">
+      <p class="big-line">Meetings end early. The room sits empty, and the hour is gone.</p>
+      <p class="lead">Booked rooms at a coworking house free up all day, but nobody hears about it in time. <span data-product>Mesh standby</span> sells that time to people who are already waiting for it.</p>
+    </div>
+  </section>
+
+  <section class="how" id="how">
+    <div class="container">
+      <h2 class="section-title">How it works</h2>
+      <div class="how-grid">
+        <div class="how-visual" aria-hidden="true">
+          <div class="panel" data-panel="0">
+            <p class="panel-label">Standby request</p>
+            <p class="panel-big">3 people, a screen, before 16:30, under 300 kr</p>
+            <ul class="mini"><li>Window <span>15:15–16:30</span></li><li>Duration <span>30–60 min</span></li><li>Flexible <span>±15 min</span></li></ul>
+          </div>
+          <div class="panel" data-panel="1" hidden>
+            <p class="panel-label">Agent log</p>
+            <ul class="mini"><li>Bakklandet released <span>15:20</span></li><li>Seats 4, screen, whiteboard <span>fits</span></li><li>Inside your window <span>fits</span></li><li>Fit score <span class="gold">94%</span></li></ul>
+          </div>
+          <div class="panel" data-panel="2" hidden>
+            <p class="panel-label">Quote</p>
+            <p class="panel-big">Bakklandet, 15:25–16:00</p>
+            <p class="panel-price">180 kr</p>
+            <ul class="mini"><li>Space's floor <span>150 kr</span></li><li>List price <span>320 kr</span></li><li>Rechecked before booking <span>yes</span></li></ul>
+          </div>
+        </div>
+        <ol class="steps">
+          <li><button class="step is-on" type="button" data-step="0" aria-pressed="true">Tell it what you need</button>
+            <p>Time window, length, group size, equipment, budget and how flexible you are. Leave it once; it keeps watching.</p></li>
+          <li><button class="step" type="button" data-step="1" aria-pressed="false">It watches and ranks</button>
+            <p>Every free room and every early release is scored against your request, with the reason it fits or doesn't.</p></li>
+          <li><button class="step" type="button" data-step="2" aria-pressed="false">It books the best fit</button>
+            <p>It quotes a price inside the space's limits and holds the slot. You accept, it rechecks and confirms. If the slot is gone, it finds the next one.</p></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="doors" id="spaces">
+    <div class="container">
+      <h2 class="section-title">Two sides, one button between them</h2>
+      <div class="door-grid">
+        <article class="door">
+          <p class="door-who">For people who need a room</p>
+          <h3>An agent that finds the room that suits you.</h3>
+          <p>Tell it once what you need. When a room opens that fits, you get a quote, often well below list price, and one tap books it.</p>
+          <a class="link" href="#marketplace">Set my preferences</a>
+        </article>
+        <article class="door">
+          <p class="door-who">For spaces with rooms to fill</p>
+          <h3>Sell the hour you were going to lose.</h3>
+          <p>Staff press one button when a meeting ends early. You set the floor and ceiling price; the agent fills the gap. Free to list, with a share of each standby booking.</p>
+          <a class="link" href="#marketplace">List my rooms</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="device" id="device">
+    <div class="container device-grid">
+      <div class="device-art" aria-hidden="true">
+        <div class="unit">
+          <div class="unit-led"></div>
+          <div class="unit-btn">Release room</div>
+          <div class="unit-label">Bakklandet · 2nd floor</div>
+        </div>
+      </div>
+      <div>
+        <h2 class="section-title">One press when the meeting ends</h2>
+        <p class="lead">A small device by the door. Staff press it when a room is ready, and the rest of the hour goes on sale.</p>
+        <dl class="facts">
+          <div><dt>One press</dt><dd>No app to open and nothing to type.</dd></div>
+          <div><dt>5-minute buffer</dt><dd>Time to tidy the room before the next guest arrives.</dd></div>
+          <div><dt>No new software for staff</dt><dd>Prices and limits are set once by the space.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="closing">
+    <div class="container narrow center">
+      <h2 class="closing-title">Your next room is <em>about to open.</em></h2>
+      <p class="lead">Live at Digs, Trondheim. Leave your request now and the agent starts watching.</p>
+      <div class="cta-row center">
+        <a class="btn btn-primary" href="#marketplace">Open marketplace</a>
+        <a class="btn btn-ghost" href="#spaces">Sell idle room time</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <p class="footer-name" data-product>Mesh standby</p>
+    <p class="footer-note">Built at the DNB × Founders Hub hackathon, Trondheim, November 2026. All rooms, times and prices on this page are demo data.</p>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>
