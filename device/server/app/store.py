@@ -78,6 +78,22 @@ CREATE INDEX IF NOT EXISTS outbox_due ON outbox (sent_at, next_attempt_at);
 READING_COVERS_SECONDS = 10.0
 
 
+# Calibration takes the per-zone median of the frames from this many seconds.
+CALIBRATION_WINDOW_SECONDS = 12.0
+
+
+def median_frame(frames: list[list[int | None]]) -> list[int | None]:
+    out: list[int | None] = []
+    for zone in zip(*frames):
+        values = sorted(v for v in zone if v is not None)
+        # A zone with no target in most frames stays "no target".
+        if len(values) * 2 < len(zone) or not values:
+            out.append(None)
+        else:
+            out.append(values[len(values) // 2])
+    return out
+
+
 class UnknownDevice(LookupError):
     pass
 
@@ -254,11 +270,22 @@ class Store:
                 ).fetchall()
                 if not rows:
                     raise NothingToCalibrate(room_id)
-                self._db.execute(
-                    "UPDATE device_state SET baseline_json = last_frame_json, present_streak = 0, "
-                    "last_present_at = NULL WHERE room_id = ? AND last_frame_json IS NOT NULL AND last_seen_at >= ?",
-                    (room_id, now - self.settings.offline_after_seconds),
-                )
+                for row in rows:
+                    # Per-zone median of the recent frames, so a zone that flickers
+                    # (for example along a table edge) gets its typical distance.
+                    frames = [
+                        json.loads(f["tof_json"])
+                        for f in self._db.execute(
+                            "SELECT tof_json FROM readings WHERE device_id = ? AND tof_json IS NOT NULL "
+                            "AND received_at >= ? ORDER BY id DESC LIMIT 10",
+                            (row["device_id"], now - CALIBRATION_WINDOW_SECONDS),
+                        )
+                    ]
+                    self._db.execute(
+                        "UPDATE device_state SET baseline_json = ?, present_streak = 0, last_present_at = NULL "
+                        "WHERE device_id = ?",
+                        (json.dumps(median_frame(frames)), row["device_id"]),
+                    )
                 if self._room_occupied(room_id):
                     self._set_room(room_id, False, now, now)
                 self._db.execute("COMMIT")

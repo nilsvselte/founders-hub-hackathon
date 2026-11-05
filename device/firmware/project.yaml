@@ -89,7 +89,17 @@ code:
       showStatus(0);
       if (millis() - lastWifiTry > WIFI_RETRY_MS) {
         lastWifiTry = millis();
-        Serial.println("wifi: connecting");
+        // Diagnose: status code and whether our network is visible at all.
+        // Blocks ~2 s, but only while there is no WiFi anyway.
+        int n = WiFi.scanNetworks();
+        String seen;
+        bool found = false;
+        for (int i = 0; i < n && i < 12; i++) {
+          if (WiFi.SSID(i) == WIFI_SSID) found = true;
+          seen += " [" + WiFi.SSID(i) + " ch" + WiFi.channel(i) + " " + WiFi.RSSI(i) + "dBm]";
+        }
+        Serial.printf("wifi: connecting, status=%d, '%s' %s, %d networks:%s\n",
+                      (int)WiFi.status(), WIFI_SSID, found ? "VISIBLE" : "NOT VISIBLE", n, seen.c_str());
         WiFi.disconnect();
         WiFi.begin(WIFI_SSID, WIFI_PASS);
       }

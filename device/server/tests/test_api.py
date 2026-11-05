@@ -249,3 +249,14 @@ def test_out_of_range_zones_are_ignored(env):
     assert send(client, clock, flicker)["occupied"] is False
     send(client, clock, [32767] * 60 + [900] * 4)
     assert send(client, clock, [32767] * 60 + [900] * 4)["occupied"] is True
+
+
+def test_calibration_uses_median_of_recent_frames(env):
+    client, _, clock = env
+    flicker_a = [600] * 64
+    flicker_b = [600] * 60 + [2600] * 4  # four zones flicker between table and floor
+    for frame in (flicker_a, flicker_b, flicker_a, flicker_a):
+        send(client, clock, frame)
+    client.post("/v1/rooms/digs-demo-1/calibrate").raise_for_status()
+    for frame in (flicker_b, flicker_a, flicker_b, flicker_a):
+        assert send(client, clock, frame)["occupied"] is False
