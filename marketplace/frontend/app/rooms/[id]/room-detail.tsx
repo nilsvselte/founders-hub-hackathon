@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, money, photo } from "../../market";
 import type { Room } from "../../market";
+import QuotePreview from "../../quote-preview";
 import Standby from "../../standby";
 
 export default function RoomDetail({ roomId }: { roomId: string }) {
@@ -49,7 +50,7 @@ export default function RoomDetail({ roomId }: { roomId: string }) {
               <p>{room.description}</p>
               <dl className="room-facts">
                 <div className="room-fact"><dt>Capacity</dt><dd>Up to {room.capacity} {room.capacity === 1 ? "person" : "people"}</dd></div>
-                <div className="room-fact"><dt>Hourly rate</dt><dd>{money(room.hourly_rate_ore)}</dd></div>
+                <div className="room-fact"><dt>Base hourly rate</dt><dd>{money(room.hourly_rate_ore)}</dd></div>
               </dl>
               {room.equipment.length > 0 && (
                 <>
@@ -59,6 +60,7 @@ export default function RoomDetail({ roomId }: { roomId: string }) {
                   </ul>
                 </>
               )}
+              <QuotePreview room={room} />
             </section>
             <aside className="room-reservation">
               <Standby room={room} />

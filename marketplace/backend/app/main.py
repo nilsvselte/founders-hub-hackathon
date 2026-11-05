@@ -1,18 +1,21 @@
 import logging
 import os
 import secrets
+from datetime import UTC, datetime
 from typing import Annotated, Any
 from uuid import UUID
 
 import psycopg
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import AwareDatetime
 
 from . import db, host
 from .accounts import Account, require_browser_mutation, require_user, router as accounts_router
 from .device import FixtureDeviceAdapter, InvalidDevicePayload, demo_release_payload, load_device_adapter
 from .matching import MatchingUnavailable, select_match
+from .pricing import PriceQuote
 from .schemas import DemoReleaseInput, ReleaseResult, Room, StandbyRequestInput, StandbyRequestStatus, VenueInfo
 from .venues import current_venue
 
@@ -123,6 +126,23 @@ def room(room_id: str) -> dict:
     if listing is None:
         raise HTTPException(status_code=404, detail="Room not found")
     return listing
+
+
+@app.get("/rooms/{room_id}/quote", response_model=PriceQuote, dependencies=[Depends(require_database)])
+def room_quote(
+    room_id: str,
+    start_at: AwareDatetime,
+    duration_minutes: Annotated[int, Query(ge=1, le=720)],
+    response: Response,
+) -> PriceQuote:
+    now = datetime.now(UTC)
+    if start_at < now:
+        raise HTTPException(status_code=422, detail="Choose a start time in the future")
+    quote = db.get_room_quote(room_id, start_at, duration_minutes, now)
+    if quote is None:
+        raise HTTPException(status_code=404, detail="Room not found")
+    response.headers["Cache-Control"] = "no-store"
+    return quote
 
 
 @app.get("/standby-requests", response_model=list[StandbyRequestStatus])

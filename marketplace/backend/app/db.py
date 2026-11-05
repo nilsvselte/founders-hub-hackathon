@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg.rows import dict_row
 
+from .pricing import PriceQuote, quote_price
 from .venues import VENUES
 
 
@@ -102,9 +103,20 @@ def list_rooms() -> list[dict]:
 def get_room(room_id: str) -> dict | None:
     with _connect() as connection:
         return connection.execute(
-            f"SELECT {_ROOM_COLUMNS} FROM marketplace_rooms WHERE id = %s AND published AND city IS NOT NULL",
+            f"""
+            SELECT {_ROOM_COLUMNS}, minimum_hourly_rate_ore, maximum_hourly_rate_ore
+            FROM marketplace_rooms
+            WHERE id = %s AND published AND city IS NOT NULL
+            """,
             (room_id,),
         ).fetchone()
+
+
+def get_room_quote(room_id: str, start_at: datetime, duration_minutes: int, now: datetime) -> PriceQuote | None:
+    room = get_room(room_id)
+    if room is None:
+        return None
+    return _quote(room, duration_minutes, start_at, now)
 
 
 def create_request(data: dict, user_id: UUID) -> str:
@@ -306,12 +318,15 @@ def record_release(event: dict) -> dict:
         }
 
 
-def _price(opening, minutes, start_at, now):
-    hourly_rate = opening["hourly_rate_ore"]
-    if start_at - now <= timedelta(minutes=30):
-        hourly_rate = hourly_rate * 80 // 100
-    hourly_rate = min(opening["maximum_hourly_rate_ore"], max(opening["minimum_hourly_rate_ore"], hourly_rate))
-    return (hourly_rate * minutes + 59) // 60
+def _quote(room, minutes, start_at, now) -> PriceQuote:
+    return quote_price(
+        hourly_rate_ore=room["hourly_rate_ore"],
+        minimum_hourly_rate_ore=room["minimum_hourly_rate_ore"],
+        maximum_hourly_rate_ore=room["maximum_hourly_rate_ore"],
+        start_at=start_at,
+        duration_minutes=minutes,
+        now=now,
+    )
 
 
 def _busy(connection, room_id, start_at, end_at, now, exclude=None):
@@ -342,7 +357,7 @@ def _candidate(opening, request, start_at, end_at, now):
         return None
     if end_at - start_at != timedelta(minutes=request["duration_minutes"]):
         return None
-    price = _price(opening, request["duration_minutes"], start_at, now)
+    price = _quote(opening, request["duration_minutes"], start_at, now)["price_ore"]
     if price > request["max_price_ore"]:
         return None
     return _json({
