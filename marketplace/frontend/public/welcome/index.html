@@ -30,9 +30,7 @@
     </nav>
     <nav aria-label="Main">
       <a href="#how">How it works</a>
-      <a href="#why">Why standbyroom</a>
     </nav>
-    <a class="btn btn-primary btn-sm" href="/" data-marketplace>Browse rooms</a>
   </div>
 </header>
 
@@ -45,18 +43,6 @@
       <h1>Tell it what you need.<br><em>It finds the room.</em></h1>
       <p class="lead">Tell us when, how many people and what equipment you need. Set a maximum price and standbyroom automatically books a matching room when one opens.</p>
       <a class="btn btn-gold btn-find" href="/ntnu?demo" data-marketplace>Find a room now</a>
-      <p class="find-or">or let it book one for you when a room opens</p>
-      <form class="standby-launch" action="/agent" method="get" aria-label="Start a standby request" aria-describedby="standby-launch-note" data-marketplace>
-        <label>Meeting date <input type="date" name="date"></label>
-        <label>People <input type="number" name="guests" min="1" max="100" value="4"></label>
-        <button class="btn btn-primary" type="submit">Book when available <span aria-hidden="true">→</span></button>
-      </form>
-      <p class="standby-launch-note" id="standby-launch-note">Review your time window and budget before sending the request.</p>
-      <nav class="standby-paths" aria-label="More ways to find a room">
-        <a class="link" href="/agent" data-marketplace>Set up calendar assistant</a>
-        <a class="link" href="/" data-marketplace>Browse rooms</a>
-      </nav>
-      <p class="app-hint">Use it as a phone app: <a href="/" data-marketplace>open it</a>, then Share → Add to Home Screen.</p>
     </div>
 
     <div class="container">
@@ -103,18 +89,6 @@
     </div>
   </section>
 
-  <section class="poster" id="poster" aria-labelledby="poster-h">
-    <div class="container poster-grid">
-      <div>
-        <h2 class="section-title" id="poster-h">Scanned a poster?</h2>
-        <p class="lead">Tap the room you're standing at. No app. No account until you book.</p>
-      </div>
-      <div class="poster-actions">
-        <a class="btn btn-gold" href="/" data-marketplace>Book this room</a>
-        <a class="btn btn-ghost" href="/agent" data-marketplace>Alert me when it's free</a>
-      </div>
-    </div>
-  </section>
 
   <section class="how" id="how">
     <div class="container">
@@ -149,36 +123,12 @@
     </div>
   </section>
 
-  <section class="why" id="why">
-    <div class="container">
-      <h2 class="section-title">Why standbyroom</h2>
-      <div class="why-grid">
-        <article class="why-card">
-          <p class="why-k">Cheaper</p>
-          <h3>Last-minute rooms, below list price.</h3>
-          <p>Rooms freed by meetings that end early go at standby prices, set inside each space's limits.</p>
-        </article>
-        <article class="why-card">
-          <p class="why-k">No hunting</p>
-          <h3>No calendars to refresh.</h3>
-          <p>You say what you need once. The agent checks new openings and explains why the room it booked fits your request.</p>
-        </article>
-        <article class="why-card">
-          <p class="why-k">It waits for you</p>
-          <h3>The agent does the waiting.</h3>
-          <p>Nothing fits yet? It keeps watching and books a room as soon as one meets your requirements.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
   <section class="closing">
     <div class="container narrow center">
       <h2 class="closing-title">Your next room is <em>about to open.</em></h2>
-      <p class="lead">Live at Digs, Trondheim. Leave your request now and the agent starts watching.</p>
+      <p class="lead">Live at Digs, Trondheim. Tell it what you need and the agent starts watching.</p>
       <div class="cta-row center">
         <a class="btn btn-primary" href="/ntnu?demo" data-marketplace>Find a room now</a>
-        <a class="btn btn-ghost" href="/agent" data-marketplace>Set up calendar assistant</a>
       </div>
     </div>
   </section>

@@ -15,7 +15,6 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;1,500&family=Inter:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="styles.css?v=3">
 <link rel="stylesheet" href="hero.css?v=2">
-<link rel="stylesheet" href="spaces.css">
 <link rel="stylesheet" href="renters.css?v=2">
 </head>
 <body class="page-renters">
@@ -30,7 +29,6 @@
     </div>
     <nav aria-label="Main">
       <a href="#how">How it works</a>
-      <a href="#worth">What it's worth</a>
       <a href="#pricing">Pricing</a>
     </nav>
     <a class="btn btn-primary btn-sm" href="/host" data-marketplace>Host dashboard</a>
@@ -57,18 +55,6 @@
     </div>
   </section>
 
-  <section class="problem">
-    <div class="container">
-      <p class="big-line">The meeting ended early. The room is paid for, empty, and nobody knows.</p>
-      <ul class="pfacts">
-        <li><b>~1 in 3</b><span class="est">estimate</span><br>booked meetings end before their slot does.</li>
-        <li><b>20–40 min</b><span class="est">estimate</span><br>left over each time, too short to rebook by hand.</li>
-        <li><b>0 kr</b><br>earned from that time today. It just disappears.</li>
-      </ul>
-      <p class="pfacts-note">Estimates for a Digs-sized coworking house, not measured data.</p>
-    </div>
-  </section>
-
   <section class="how" id="how">
     <div class="container">
       <h2 class="section-title">Sell the hour you were going to lose.</h2>
@@ -76,148 +62,27 @@
         <div class="how-visual" aria-hidden="true">
           <div class="panel" data-panel="0">
             <p class="panel-label">By the door</p>
-            <p class="panel-big">One button per room</p>
-            <ul class="mini"><li>Setup <span>about 10 min</span></li><li>Power <span>USB-C or battery</span></li><li>Staff training <span>none</span></li></ul>
+            <p class="panel-big">One press per room</p>
+            <ul class="mini"><li>Bakklandet released <span>15:20</span></li><li>Price floor <span>150 kr</span></li><li>Price ceiling <span>320 kr</span></li></ul>
           </div>
           <div class="panel" data-panel="1" hidden>
-            <p class="panel-label">Your limits, Bakklandet</p>
-            <ul class="mini"><li>Price floor <span>150 kr</span></li><li>Price ceiling <span>320 kr</span></li><li>Turnaround buffer <span>5 min</span></li><li>On standby <span>Mon–Fri, 08–18</span></li></ul>
+            <p class="panel-label">Agent log</p>
+            <ul class="mini"><li>Best buyer fit <span>94%</span></li><li>Quoted <span class="gold">180 kr</span></li><li>Booked, calendar updated <span>15:21</span></li></ul>
           </div>
           <div class="panel" data-panel="2" hidden>
-            <p class="panel-label">Agent log</p>
-            <ul class="mini"><li>Bakklandet released <span>15:20</span></li><li>Best buyer fit <span>94%</span></li><li>Quoted <span class="gold">180 kr</span></li><li>Booked, calendar updated <span>15:21</span></li></ul>
+            <p class="panel-label">Your payout</p>
+            <ul class="mini"><li>Booking <span>180 kr</span></li><li>Fee, 15% <span>− 27 kr</span></li><li>You earn <span class="gold">153 kr</span></li></ul>
           </div>
         </div>
         <ol class="steps">
-          <li><button class="step is-on" type="button" data-step="0" aria-pressed="true">Put a button by the door</button>
-            <p>A small device per room. When a meeting ends early, staff press it once. No app, nothing to type.</p></li>
-          <li><button class="step" type="button" data-step="1" aria-pressed="false">Set your limits once</button>
-            <p>A price floor and ceiling per room, a turnaround buffer for tidying, and which rooms may go on standby, and when.</p></li>
-          <li><button class="step" type="button" data-step="2" aria-pressed="false">The agent sells and books</button>
-            <p>It matches the freed time to people already looking, quotes inside your limits, books the slot and updates your calendar.</p></li>
+          <li><button class="step is-on" type="button" data-step="0" aria-pressed="true">Release a room</button>
+            <p>When a meeting ends early, staff press one button by the door. Nothing to type.</p></li>
+          <li><button class="step" type="button" data-step="1" aria-pressed="false">The agent books it</button>
+            <p>It finds someone nearby, quotes inside your price limits, books the slot and updates your calendar.</p></li>
+          <li><button class="step" type="button" data-step="2" aria-pressed="false">You earn</button>
+            <p>Every booking is paid out monthly, with the fee already taken off.</p></li>
         </ol>
       </div>
-    </div>
-  </section>
-
-  <section class="keep" id="keep" aria-labelledby="keep-h">
-    <div class="container split">
-      <div>
-        <h2 class="section-title" id="keep-h">Keep your booking system</h2>
-        <p class="lead">Every standby booking lands in your own calendar. Nothing to switch, and we only fill rooms that would sit empty.</p>
-      </div>
-      <ul class="lands" aria-label="Where bookings land">
-        <li><b>Outlook</b><span>Booking added to the room calendar</span></li>
-        <li><b>Google Calendar</b><span>Booking added to the room calendar</span></li>
-        <li><b>OfficeRnD</b><span>Booking added to the room calendar</span></li>
-        <li><b>Anything else</b><span>An email invite to the room</span></li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="worth" id="worth" aria-labelledby="worth-h">
-    <div class="container">
-      <div class="worth-card">
-        <div>
-          <h2 id="worth-h">What idle time is worth</h2>
-          <p class="worth-sub">Time your rooms already lose each week, sold at standby prices. Move the sliders to match your space.</p>
-          <form class="calc" id="worth-calc">
-            <div>
-              <label for="w-rooms">Meeting rooms <output id="o-rooms" for="w-rooms">8</output></label>
-              <input type="range" id="w-rooms" name="rooms" min="1" max="30" step="1" value="8">
-            </div>
-            <div>
-              <label for="w-hrs">Hours freed per room, per week <output id="o-hours" for="w-hrs">6 h</output></label>
-              <input type="range" id="w-hrs" name="hours" min="1" max="20" step="1" value="6">
-            </div>
-            <div>
-              <label for="w-price">Standby price per hour <output id="o-price" for="w-price">300 kr</output></label>
-              <input type="range" id="w-price" name="price" min="100" max="800" step="25" value="300">
-            </div>
-          </form>
-        </div>
-        <div class="worth-out">
-          <div class="worth-total" aria-live="polite">
-            <p>You keep, per month</p>
-            <p class="kr" id="w-total">53 040 kr</p>
-            <p>from time that earns nothing today</p>
-          </div>
-          <ul class="worth-math">
-            <li>Freed hours per month <span id="w-hours">208 h</span></li>
-            <li>Sold at your price <span id="w-gross">62 400 kr</span></li>
-            <li>Platform fee, 15% <span id="w-fee">− 9 360 kr</span></li>
-            <li>Per year, after fee <span id="w-year">636 480 kr</span></li>
-          </ul>
-          <p class="worth-note">Estimate. Assumes every freed hour sells; real fill will be lower at first.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="device" id="device">
-    <div class="container device-grid">
-      <div class="device-art">
-        <div>
-          <div class="unit">
-            <div class="unit-led" id="unit-led" aria-hidden="true"></div>
-            <div class="unit-screen" id="unit-screen" aria-live="polite">Ready</div>
-            <button class="unit-btn press" id="unit-release" type="button">Release room</button>
-            <div class="unit-label">Bakklandet · 2nd floor</div>
-          </div>
-          <p class="unit-hint">Try it: press the button.</p>
-        </div>
-      </div>
-      <div>
-        <h2 class="section-title">One press when the meeting ends</h2>
-        <p class="lead">A small device by the door. Staff press it when a room is ready, and the rest of the hour goes on sale.</p>
-        <dl class="facts">
-          <div><dt>One press</dt><dd>No app to open and nothing to type.</dd></div>
-          <div><dt>5-minute buffer</dt><dd>Time to tidy the room before the next guest arrives.</dd></div>
-          <div><dt>No new software for staff</dt><dd>Prices and limits are set once by the space.</dd></div>
-        </dl>
-      </div>
-    </div>
-  </section>
-
-  <section class="kit" id="kit" aria-labelledby="kit-h">
-    <div class="container device-grid">
-      <div>
-        <h2 class="section-title" id="kit-h">Put standbyroom in your rooms</h2>
-        <p class="lead">One QR code per room on the door and one in reception, so people walking past can book in seconds.</p>
-        <div class="cta-row">
-          <a class="btn btn-gold" href="/host" data-marketplace>Get your room kit (free)</a>
-        </div>
-      </div>
-      <div class="kit-art" aria-hidden="true">
-        <div class="sticker">
-          <svg viewBox="0 0 21 21" class="qr" shape-rendering="crispEdges"><path fill="#0F1420" d="M0 0h7v7H0zM14 0h7v7h-7zM0 14h7v7H0z"/><path fill="#fff" d="M1 1h5v5H1zM15 1h5v5h-5zM1 15h5v5H1z"/><path fill="#0F1420" d="M2 2h3v3H2zM16 2h3v3h-3zM2 16h3v3H2zM8 0h1v2H8zM10 1h2v1h-2zM9 3h2v2H9zM12 4h1v3h-1zM8 6h2v1H8zM0 8h2v1H0zM3 8h3v1H3zM8 8h3v2H8zM13 8h2v1h-2zM16 8h1v3h-1zM18 8h3v1h-3zM1 10h2v2H1zM5 10h2v1H5zM11 10h1v3h-1zM14 10h1v2h-1zM19 10h2v2h-2zM8 12h2v1H8zM4 12h1v1H4zM17 12h1v1h-1zM8 14h1v3H8zM10 15h3v1h-3zM14 14h2v2h-2zM18 14h1v2h-1zM13 17h1v4h-1zM15 17h3v1h-3zM9 18h3v1H9zM19 17h2v1h-2zM16 19h2v2h-2zM8 20h3v1H8zM20 20h1v1h-1z"/></svg>
-          <p class="sticker-room">Bakklandet</p>
-          <p class="sticker-cta">Scan to book this room</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="control" id="control">
-    <div class="container">
-      <h2 class="section-title">You decide. The agent only sells inside your rules.</h2>
-      <div class="control-grid">
-        <article class="ctl"><p class="ctl-k">Price limits</p><h3>Floor and ceiling, per room</h3><p>The agent never quotes below your floor or above your ceiling. Last-minute slots go nearer the floor.</p></article>
-        <article class="ctl"><p class="ctl-k">Rooms and hours</p><h3>Which rooms, and when</h3><p>Put only some rooms on standby, only on weekdays, or never during your own peak hours.</p></article>
-        <article class="ctl"><p class="ctl-k">Turnaround</p><h3>A buffer to tidy</h3><p>Choose how many minutes stay free between guests. The agent books around it.</p></article>
-        <article class="ctl"><p class="ctl-k">Payouts</p><h3>Paid out monthly</h3><p>Every booking shows in one report, with the fee already taken off. Paid to your account each month.</p></article>
-      </div>
-    </div>
-  </section>
-
-  <section class="who" id="who" aria-labelledby="who-h">
-    <div class="container split">
-      <h2 class="section-title" id="who-h">Who walks in?</h2>
-      <dl class="facts who-facts">
-        <div><dt>Named and confirmed</dt><dd>Every booker is named and confirmed before they arrive.</dd></div>
-        <div><dt>Your rules</dt><dd>You set which rooms, which hours and how many minutes of buffer between meetings.</dd></div>
-        <div><dt>Your door policy</dt><dd>Door access follows your own rules for guests.</dd></div>
-      </dl>
     </div>
   </section>
 
@@ -227,27 +92,23 @@
       <div class="price-grid">
         <div class="price-main">
           <p class="price-big">15%</p>
-          <p class="price-what">of each standby booking</p>
+          <p class="price-what">per booking</p>
           <p>Taken off before payout. If nothing sells, you pay nothing.</p>
         </div>
         <ul class="price-list">
-          <li><b>0 kr</b><span>Monthly fee</span></li>
+          <li><b>0 kr</b><span>Per month</span></li>
           <li><b>0 kr</b><span>To list your rooms</span></li>
-          <li><b>~1 500 kr</b><span>Per button, one-off <span class="est">estimate</span></span></li>
         </ul>
       </div>
-      <p class="price-start">Start with QR stickers: 0 kr. Add release buttons later.</p>
-      <p class="pfacts-note">Device price is a placeholder until hardware is costed.</p>
     </div>
   </section>
 
   <section class="closing">
     <div class="container narrow center">
       <h2 class="closing-title">Your empty rooms could <em>earn today.</em></h2>
-      <p class="lead">Live at Digs, Trondheim. We set up the buttons and your limits with you in one visit.</p>
+      <p class="lead">Live at Digs, Trondheim. Release your first room today.</p>
       <div class="cta-row center">
-        <a class="btn btn-primary" href="/live/digs-demo-1" data-marketplace>See the live room demo</a>
-        <a class="btn btn-ghost" href="/host" data-marketplace>Open the host dashboard</a>
+        <a class="btn btn-primary" href="/host" data-marketplace>Open the host dashboard</a>
       </div>
     </div>
   </section>
@@ -262,7 +123,6 @@
 
 <script src="main.js?v=5" data-marketplace-origin="same-origin"></script>
 <script src="hero-art.js"></script>
-<script src="spaces.js"></script>
 <script src="renters.js"></script>
 </body>
 </html>
