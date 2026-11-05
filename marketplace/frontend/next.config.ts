@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 const apiUrl = (process.env.MARKETPLACE_API_URL ?? "http://127.0.0.1:8000").replace(/\/+$/, "");
 
 const nextConfig: NextConfig = {
+  agentRules: false,
+  devIndicators: false,
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${apiUrl}/:path*` }];
   },

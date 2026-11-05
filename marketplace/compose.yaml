@@ -15,5 +15,49 @@ services:
       timeout: 3s
       retries: 15
 
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://marketplace:marketplace@db:5432/marketplace
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          from urllib.request import urlopen;
+          urlopen('http://127.0.0.1:8000/ready', timeout=4).close()
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        MARKETPLACE_API_URL: http://api:8000
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - --input-type=module
+        - -e
+        - >-
+          const response = await fetch('http://127.0.0.1:3000/api/ready');
+          if (!response.ok) process.exit(1);
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
 volumes:
   postgres_data:

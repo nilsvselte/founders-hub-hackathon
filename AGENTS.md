@@ -21,4 +21,6 @@ Use one physical button, two sample rooms, and one standby request. Show that th
 
 Keep availability, price limits, and booking confirmation in the marketplace so the agent works from the same rules as the rest of the product. Edit this guide directly. `CLAUDE.md` links to it.
 
+The device API contract is still open. Put its translation behind `DeviceAdapter` in the marketplace backend. A fixture drives the same release flow locally. Claude chooses among eligible openings and explains the fit. The backend controls the quote, hold, and booking.
+
 See the [marketplace README](marketplace/README.md) for local startup commands.
