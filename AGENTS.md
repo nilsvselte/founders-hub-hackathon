@@ -22,7 +22,7 @@ Local startup and checks: [marketplace/README.md](marketplace/README.md).
 - `device/` reports physical facts only. The marketplace owns bookings and decides on no-shows, overstays, auto-release, and pricing.
 - Room IDs are shared between the marketplace and the device server (e.g. `digs-demo-1`).
 - This repo is public: secrets go in `.env` files (git ignores them); files hold no tokens, personal emails, or phone numbers.
-- Always `git pull --rebase` before editing and again before pushing; teammates push to main often.
+- Always `git pull --rebase` before editing and again before pushing; teammates push to main often. Commit and push to main after every finished change, as you work; don't sit on local changes. Never force push.
 - Edit this file directly; `CLAUDE.md` only imports it. Keep it under about 60 lines: longer how-to goes into a skill (see `skill-system`).
 
 ## Skills
