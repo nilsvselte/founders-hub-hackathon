@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAccount } from "../account";
+import { GoogleCalendarLink } from "../google-calendar-link";
+import type { CalendarOffer } from "../google-calendar";
 import { api, money } from "../market";
 
 type Booking = {
@@ -14,7 +16,7 @@ type Booking = {
   latest_end: string;
   duration_minutes: number;
   party_size: number;
-  offer: { room_name: string; start_at: string; end_at: string; price_ore: number } | null;
+  offer: (CalendarOffer & { price_ore: number }) | null;
 };
 
 const labels = { waiting: "On standby", offered: "Offer ready", confirmed: "Confirmed", expired: "Expired" };
@@ -73,6 +75,7 @@ export default function BookingsPage() {
                   <span aria-hidden="true">↗</span>
                 </div>
               </Link>
+              <GoogleCalendarLink booking={booking} />
             </li>
           ))}
         </ul>

@@ -175,6 +175,10 @@ class BookingIntegrationTests(unittest.TestCase):
         booking = db.accept_offer(request_id, offer["id"], user_id=self.renter)
         self.assertEqual(booking["status"], "confirmed")
         self.assertEqual(datetime.fromisoformat(booking["offer"]["end_at"]), self.end)
+        saved, = db.list_requests(self.renter)
+        self.assertEqual(saved["booking_reference"], booking["booking_reference"])
+        self.assertEqual(saved["offer"]["room_venue"], "Test venue")
+        self.assertEqual(saved["offer"]["room_city"], "Trondheim")
 
     def test_accept_observes_hold_invalidated_while_waiting_for_room_lock(self):
         db.record_release(self.event)

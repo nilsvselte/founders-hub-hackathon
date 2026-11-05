@@ -177,7 +177,8 @@ def _request(connection, request_id, *, user_id=None, lock=False):
 def _active_offer(connection, request_id, now):
     return connection.execute(
         """
-        SELECT o.*, r.name AS room_name, r.photo AS room_photo
+        SELECT o.*, r.name AS room_name, r.photo AS room_photo,
+            r.venue_name AS room_venue, r.city AS room_city
         FROM marketplace_offers o
         JOIN marketplace_rooms r ON r.id = o.room_id
         WHERE o.request_id = %s AND (o.confirmed_at IS NOT NULL OR (r.published AND o.expires_at > %s))
@@ -196,7 +197,7 @@ def _status(connection, request, now):
         data["status"] = "confirmed" if offer["confirmed_at"] else "offered"
         data["offer"] = _json({
             key: offer[key]
-            for key in ("id", "room_name", "room_photo", "start_at", "end_at", "price_ore",
+            for key in ("id", "room_name", "room_photo", "room_venue", "room_city", "start_at", "end_at", "price_ore",
                         "expires_at", "match_reason", "match_provider", "booking_reference")
         })
         data["booking_reference"] = offer["booking_reference"]

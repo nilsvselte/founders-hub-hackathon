@@ -488,6 +488,7 @@ fieldset { min-width: 0; padding: 0; border: 0; margin: 0; }
 .button.primary { width: 100%; margin-top: 14px; }
 .button.secondary { margin-top: 10px; color: var(--ink); background: transparent; border-color: var(--line); }
 .button.secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.booking-list .booking-calendar { margin: 0 0 15px; }
 
 .request-summary dl { margin: 0; }
 .request-summary dl > div {

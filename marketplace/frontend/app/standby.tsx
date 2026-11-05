@@ -6,16 +6,15 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useAccount } from "./account";
+import { GoogleCalendarLink } from "./google-calendar-link";
+import type { CalendarOffer } from "./google-calendar";
 import { ApiError, api, money, photo } from "./market";
 import type { Room } from "./market";
 import { upcomingRoomStart } from "./oslo-time";
 
-type Offer = {
+type Offer = CalendarOffer & {
   id: string;
-  room_name: string;
   room_photo: string | null;
-  start_at: string;
-  end_at: string;
   price_ore: number;
   expires_at: string;
   match_reason: string | null;
@@ -369,6 +368,7 @@ function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
             </div>
           )}
         </div>
+        {request && <GoogleCalendarLink booking={request} />}
         {error && request && <p className="error" role="alert">{error}</p>}
         {pollError && (status === "waiting" || status === "offered") && <p className="status-note" role="status">Connection interrupted. Retrying automatically…</p>}
         {status === "offered" && offer && (

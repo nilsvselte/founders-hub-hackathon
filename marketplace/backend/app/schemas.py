@@ -54,6 +54,8 @@ class OfferStatus(BaseModel):
     id: UUID
     room_name: str
     room_photo: str | None = None
+    room_venue: str | None = None
+    room_city: str | None = None
     start_at: AwareDatetime
     end_at: AwareDatetime
     price_ore: int
