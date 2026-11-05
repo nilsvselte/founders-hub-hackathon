@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import AwareDatetime
 
-from . import db, host, notify, ntnu, preferences, suggestions
+from . import assistant, db, host, notify, ntnu, preferences, suggestions
 from .accounts import Account, require_agent_or_user, require_browser_mutation, require_user, router as accounts_router
 from .device import (
     FixtureDeviceAdapter, InvalidDevicePayload, RoomRelease, RoomReleaseRequest,
@@ -35,6 +35,7 @@ app.include_router(preferences.router)
 app.include_router(suggestions.router)
 app.include_router(notify.router)
 app.include_router(ntnu.router)
+app.include_router(assistant.router)
 logger = logging.getLogger(__name__)
 device_bearer = HTTPBearer(auto_error=False)
 _match_workers = ThreadPoolExecutor(max_workers=4, thread_name_prefix="room-matcher")

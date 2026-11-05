@@ -24,6 +24,12 @@ type Suggestion = {
   reason: string;
 };
 
+type AssistantReply = {
+  date: string | null; from_time: string | null; to_time: string | null;
+  duration_minutes: number | null; people: number | null;
+  equipment: string[]; max_price_nok: number | null; reply: string;
+};
+
 type Criteria = {
   date: string; from: string; to: string; duration: number;
   people: number; equipment: string[]; maxPrice: number | null;
@@ -58,6 +64,10 @@ export default function FindRoom({ children }: { children?: ReactNode }) {
   const [results, setResults] = useState<Suggestion[]>([]);
   const [error, setError] = useState("");
   const [booking, setBooking] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [reply, setReply] = useState("");
+  const [asked, setAsked] = useState(false);
+  const [thinking, setThinking] = useState(false);
 
   useEffect(() => {
     const now = osloDateTime(Date.now());
@@ -79,7 +89,52 @@ export default function FindRoom({ children }: { children?: ReactNode }) {
 
   async function find(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!criteria) return;
+    if (criteria) await search(criteria);
+  }
+
+  // Claude turns the renter's words into the same criteria the form holds, then the normal search runs.
+  async function ask(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const text = message.trim();
+    if (!text || !criteria) return;
+    setThinking(true);
+    setError("");
+    try {
+      const result = await api<AssistantReply>("assistant/understand", {
+        method: "POST",
+        body: JSON.stringify({
+          message: text,
+          previous: asked ? {
+            date: criteria.date, from_time: criteria.from, to_time: criteria.to,
+            duration_minutes: criteria.duration, people: criteria.people,
+            equipment: criteria.equipment, max_price_nok: criteria.maxPrice,
+          } : null,
+          equipment_options: equipmentOptions,
+        }),
+      });
+      setReply(result.reply);
+      setAsked(true);
+      setMessage("");
+      const next: Criteria = {
+        date: result.date ?? criteria.date,
+        from: result.from_time ?? criteria.from,
+        to: result.to_time ?? criteria.to,
+        duration: result.duration_minutes ?? criteria.duration,
+        people: result.people ?? criteria.people,
+        equipment: result.equipment.filter((item) => equipmentOptions.includes(item)),
+        maxPrice: result.max_price_nok ?? null,
+      };
+      setCriteria(next);
+      const complete = result.date && result.from_time && result.to_time && result.duration_minutes && result.people;
+      if (complete) await search(next);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Something went wrong. Please try again.");
+    } finally {
+      setThinking(false);
+    }
+  }
+
+  async function search(criteria: Criteria) {
     setError("");
     const from = osloInstant({ date: criteria.date, time: criteria.from });
     const until = osloInstant({ date: criteria.date, time: criteria.to });
@@ -165,10 +220,32 @@ export default function FindRoom({ children }: { children?: ReactNode }) {
     <section className="panel request-panel find-room" aria-labelledby="find-title">
       <div className="panel-heading">
         <h2 id="find-title">Find a room</h2>
-        <p>Set what you need. We rank the open rooms that fit, best first. Times are Oslo time.</p>
+        <p>Say what you need in your own words. Claude fills in the details, and we rank the open rooms that fit, best first. Times are Oslo time.</p>
         {children}
       </div>
+      {criteria && (
+        <form className="find-room-ask" onSubmit={ask}>
+          <label htmlFor="find-room-message">Tell Claude what you need</label>
+          <textarea id="find-room-message" rows={2} maxLength={1000} value={message}
+            placeholder="A room for 4 today after 15:00, 30 minutes, with a screen, max 500 kr"
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }}
+            disabled={thinking || state === "searching" || !!booking} />
+          {!loading && !account ? (
+            <DemoGuestButton label="Start" />
+          ) : account && account.role !== "renter" ? (
+            <p className="status-note">Finding rooms needs a renter account.</p>
+          ) : (
+            <button type="submit" className="button primary" disabled={thinking || !message.trim() || state === "searching"}>
+              {thinking ? "Claude is reading…" : state === "searching" ? "Finding rooms…" : "Ask Claude"} <span aria-hidden="true">→</span>
+            </button>
+          )}
+          {reply && <p className="find-room-reply" role="status"><strong>Claude:</strong> {reply}</p>}
+        </form>
+      )}
       {!criteria ? <p className="status-note" role="status">Loading…</p> : (
+        <details className="find-room-details-form">
+        <summary>Adjust details yourself</summary>
         <form onSubmit={find}>
           <fieldset disabled={state === "searching" || !!booking}>
             <legend className="sr-only">Room criteria</legend>
@@ -220,9 +297,10 @@ export default function FindRoom({ children }: { children?: ReactNode }) {
               {state === "searching" ? "Finding rooms…" : "Find room"} <span aria-hidden="true">→</span>
             </button>
           )}
-          {error && <p className="error" role="alert">{error}</p>}
         </form>
+        </details>
       )}
+      {error && <p className="error" role="alert">{error}</p>}
 
       {state === "done" && (
         <div className="find-room-results" aria-live="polite">
