@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="styles.css?v=2">
 <link rel="stylesheet" href="board.css?v=2">
 <link rel="stylesheet" href="hero.css?v=2">
-<link rel="stylesheet" href="bookers.css?v=2">
+<link rel="stylesheet" href="bookers.css?v=3">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -39,6 +39,8 @@
       <p class="where">Live at Digs, Trondheim</p>
       <h1>Tell it what you need.<br><em>It finds the room.</em></h1>
       <p class="lead">Tell us when, how many people and what equipment you need. Set a maximum price and standbyroom automatically books a matching room when one opens.</p>
+      <a class="btn btn-gold btn-find" href="http://127.0.0.1:3001/" data-marketplace>Find a room now</a>
+      <p class="find-or">or let it book one for you when a room opens</p>
       <form class="standby-launch" action="http://127.0.0.1:3001/standby" method="get" aria-label="Start a standby request" aria-describedby="standby-launch-note" data-marketplace>
         <label>Meeting date <input type="date" name="date"></label>
         <label>People <input type="number" name="guests" min="1" max="100" value="4"></label>
