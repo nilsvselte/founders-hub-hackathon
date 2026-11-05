@@ -108,7 +108,7 @@ export default function Browse() {
     return locationText.includes(searchTerm)
       && room.capacity >= filters.guests
       && matchesCategory;
-  });
+  }).sort((first, second) => Number(Boolean(photo(second.image_key))) - Number(Boolean(photo(first.image_key))));
   const isFiltered = !!filters.location || filters.guests > 0 || category !== "All spaces";
   const cities = [...new Set(rooms.map((room) => room.city))].sort();
 
