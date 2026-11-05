@@ -1,6 +1,9 @@
 """Synthetic TP HTTP service for experiments. Never makes network requests."""
 
 import json
+import os
+import tempfile
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -9,9 +12,14 @@ from .client import Settings, TPClient
 
 
 class FixtureService:
-    def __init__(self):
+    def __init__(self, state_file: Path | None = None):
+        self.state_file = state_file
         self.bookings: dict[str, dict] = {}
         self.counter = 0
+        if state_file and state_file.exists():
+            state = json.loads(state_file.read_text())
+            self.bookings = state["bookings"]
+            self.counter = state["counter"]
         self.rooms = [
             {
                 "id": "DEMO-G1",
@@ -20,7 +28,7 @@ class FixtureService:
                 "area_id": "DEMO-GLOS",
                 "area_name": "Demo Gløshaugen",
                 "building_id": "DEMO-B1",
-                "building_name": "Demo building",
+                "building_name": "Demo Realfagbygget",
                 "available": True,
                 "can_book": True,
                 "place_booking": False,
@@ -33,7 +41,7 @@ class FixtureService:
                 "area_id": "DEMO-GLOS",
                 "area_name": "Demo Gløshaugen",
                 "building_id": "DEMO-B1",
-                "building_name": "Demo building",
+                "building_name": "Demo Realfagbygget",
                 "available": True,
                 "can_book": True,
                 "place_booking": False,
@@ -52,7 +60,7 @@ class FixtureService:
         if path.endswith("/room/2.0/buildings.php"):
             return httpx.Response(
                 200,
-                json={"data": [{"id": "DEMO-B1", "name": "Demo building", "areaid": "DEMO-GLOS"}]},
+                json={"data": [{"id": "DEMO-B1", "name": "Demo Realfagbygget", "areaid": "DEMO-GLOS"}]},
             )
         if path.endswith("/user/quotas.php"):
             return httpx.Response(200, json={"demo": True, "message": "Synthetic quota response"})
@@ -95,19 +103,35 @@ class FixtureService:
                     "start": data["start"],
                     "end": data["end"],
                 }
+                self.save()
                 return httpx.Response(
                     200, json={"reservations-completed": [{"ok": True, "id": booking_id}]}
                 )
             if request.method == "DELETE":
                 removed = self.bookings.pop(request.url.params["id"], None)
+                self.save()
                 return httpx.Response(200, json={"deleted": removed is not None})
         return httpx.Response(404, json={"error": "Unknown fixture route"})
+
+    def save(self):
+        if self.state_file is None:
+            return
+        self.state_file.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        fd, temporary = tempfile.mkstemp(dir=self.state_file.parent)
+        try:
+            with os.fdopen(fd, "w") as output:
+                json.dump({"bookings": self.bookings, "counter": self.counter}, output)
+            os.replace(temporary, self.state_file)
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
 
 
 def make_client(settings: Settings) -> TPClient:
     if settings.backend == "tp":
         return TPClient(settings)
-    service = FixtureService()
+    state_path = os.getenv("TP_FIXTURE_STATE")
+    service = FixtureService(Path(state_path) if state_path else None)
 
     class FixtureClient(TPClient):
         def _load_session(self):

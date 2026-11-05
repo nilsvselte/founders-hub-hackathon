@@ -17,6 +17,7 @@ build/
 coverage/
 
 # Local files
+.ntnu-demo/
 .DS_Store
 *.log
 

@@ -101,6 +101,7 @@ export function MarketHeader() {
         <nav className="market-nav" aria-label="Marketplace">
           <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>Browse rooms</Link>
           <Link href="/venues" aria-current={pathname.startsWith("/venues") ? "page" : undefined}>Venues</Link>
+          <Link href="/ntnu" aria-current={pathname.startsWith("/ntnu") ? "page" : undefined}>NTNU</Link>
           {account ? (
             <Link href={primaryPath} aria-current={pathname.startsWith(primaryPath) ? "page" : undefined}>
               {account.role === "host" ? "Host dashboard" : "My bookings"}

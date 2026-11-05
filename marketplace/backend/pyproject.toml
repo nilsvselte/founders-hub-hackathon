@@ -7,8 +7,12 @@ dependencies = [
     "psycopg[binary]>=3.2,<4",
     "pydantic-ai-slim[anthropic]>=1.107.10,<2",
     "pywebpush>=2,<3",
+    "tp-room-booking-mcp",
     "uvicorn>=0.34,<1",
 ]
+
+[tool.uv.sources]
+tp-room-booking-mcp = { path = "../../experiments/tp-room-booking-mcp" }
 
 [tool.vercel]
 entrypoint = "app.main:app"

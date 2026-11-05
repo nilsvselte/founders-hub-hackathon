@@ -7,6 +7,7 @@ How standbyroom works and why, for teammates and coding agents. For how to do a 
 | [Agentic platform](agentic-platform/README.md) | The marketplace agent, agents that find and book rooms, and how they use sensor data and dynamic prices. |
 | [Notifications](notifications.md) | Web push to hosts and bookers: kinds, triggers, settings, VAPID keys, testing a push. |
 | [Phone app](phone-app.md) | Installing the marketplace on a phone's home screen, the service worker, and subscribing a device to push. |
+| [NTNU student rooms](ntnu/README.md) | Browser room assistant, MCP demo, student isolation and the pending live TP connection. |
 
 Related READMEs:
 
