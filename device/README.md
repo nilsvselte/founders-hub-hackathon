@@ -87,6 +87,26 @@ It sends this event when staff press the release button:
 
 The device server cannot send `room.released`, because it does not know the booking's `block_id` or `scheduled_end_at`. The marketplace maps `room.release_requested` to the current block and decides whether to release it. Failed sends are retried with the same `event_id`, so the marketplace can deduplicate. The current `FixtureDeviceAdapter` returns `None` for these types, so the existing endpoint accepts them without breaking until the marketplace handles them.
 
-## Run locally
+## Run the device server
 
-Not built yet. Install and run commands go here once `server/` and `firmware/` exist.
+Use Python 3.12 or newer with uv. Run these from `device/server/`.
+
+```sh
+cp .env.example .env
+uv sync
+uv run --env-file .env uvicorn app.main:app --host 0.0.0.0 --port 8100 --reload
+```
+
+`--host 0.0.0.0` lets boards on the hotspot reach the server. Open `http://127.0.0.1:8100/` for a live room view, or `http://127.0.0.1:8100/docs` for the API docs. `GET /v1/outbox` shows the events sent to the marketplace and any send errors.
+
+Set `DEVICES` to map each board to a room. Set `MARKETPLACE_URL` and `MARKETPLACE_DEVICE_TOKEN` to push events, and use the same token as the marketplace's `MARKETPLACE_DEVICE_TOKEN`. Leave `MARKETPLACE_URL` empty to queue events without sending them. Occupancy thresholds are in `.env.example`.
+
+Run the tests with `uv run pytest`.
+
+To calibrate a room, empty it, let the board report for a few seconds, and then run:
+
+```sh
+curl -X POST http://127.0.0.1:8100/v1/rooms/digs-demo-1/calibrate
+```
+
+Firmware setup goes here once `firmware/` exists.

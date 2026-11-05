@@ -16,3 +16,8 @@ coverage/
 # Local files
 .DS_Store
 *.log
+
+# Device server data
+*.db
+*.db-wal
+*.db-shm
