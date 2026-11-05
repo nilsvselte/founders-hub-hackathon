@@ -16,6 +16,7 @@ code:
     // (gitignored) next to project.yaml. The generated main.cpp is in build/src/.
     #include "../../secrets.h"
     #include <WiFi.h>
+    #include <WiFiClientSecure.h>
     #include <HTTPClient.h>
 
     static const uint32_t REPORT_EVERY_MS = 3000;
@@ -57,10 +58,18 @@ code:
       body += calibrations;
       body += "}}";
 
+      // SERVER_URL may be http:// (server on the same network) or https:// (hosted).
+      // HTTPS skips certificate checks: fine for a demo, not for production.
+      static WiFiClientSecure tls;
+      static WiFiClient plain;
+      static bool tlsReady = false;
+      if (!tlsReady) { tls.setInsecure(); tlsReady = true; }
+      bool https = strncmp(SERVER_URL, "https://", 8) == 0;
       HTTPClient http;
-      http.setTimeout(1500);
-      http.setConnectTimeout(1500);
-      if (!http.begin(SERVER_URL)) return 0;
+      http.setTimeout(4000);
+      http.setConnectTimeout(4000);
+      http.setReuse(true);
+      if (!(https ? http.begin(tls, SERVER_URL) : http.begin(plain, SERVER_URL))) return 0;
       http.addHeader("Content-Type", "application/json");
       if (sizeof(DEVICE_TOKEN) > 1) http.addHeader("Authorization", "Bearer " DEVICE_TOKEN);
       int code = http.POST(body);
