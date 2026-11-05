@@ -40,8 +40,13 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const version = ++revision.current;
     let current = await api<Account>("auth/me").catch(() => null);
     // Demo: signed-out bookers become the shared demo guest automatically (off when the backend flag is off).
-    if (!current && typeof window !== "undefined" && !/^\/(host|login|sign|register|account|live)/.test(window.location.pathname)) {
-      current = await api<Account>("auth/demo-session", { method: "POST" }).catch(() => null);
+    const demoHost = current?.email === "demo-host@example.test";
+    if ((!current || demoHost) && typeof window !== "undefined" && !/^\/(host|login|sign|register|account|live)/.test(window.location.pathname)) {
+      current = (await api<Account>("auth/demo-session", { method: "POST" }).catch(() => null)) ?? current;
+    }
+    // Demo: the host workspace opens as the seeded demo host without signing in.
+    if (current?.role !== "host" && typeof window !== "undefined" && /^\/host/.test(window.location.pathname)) {
+      current = (await api<Account>("auth/demo-host-session", { method: "POST" }).catch(() => null)) ?? current;
     }
     if (version === revision.current) {
       updateAccount(current);

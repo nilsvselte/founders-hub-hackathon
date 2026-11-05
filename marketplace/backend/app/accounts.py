@@ -313,6 +313,26 @@ def demo_session(request: Request, response: Response) -> Account:
     return Account.model_validate(account)
 
 
+DEMO_HOST_EMAIL = "demo-host@example.test"
+
+
+@router.post("/demo-host-session", dependencies=[Depends(require_browser_mutation)])
+def demo_host_session(request: Request, response: Response) -> Account:
+    """Sign the visitor in as the seeded demo host (DEMO.md setup). Same flag as the demo guest."""
+    if not demo_guest_enabled():
+        raise HTTPException(status_code=404, detail="Not found")
+    with _connect() as connection:
+        account = connection.execute(
+            "SELECT id, name, email, role FROM marketplace_users WHERE email = %s AND role = 'host'",
+            (DEMO_HOST_EMAIL,),
+        ).fetchone()
+        if account is None:
+            raise HTTPException(status_code=503, detail="Demo host is not set up")
+        token = _issue_session(connection, request, account["id"])
+    _set_session_cookie(response, token)
+    return Account.model_validate(account)
+
+
 @router.get("/me")
 def me(response: Response, account: Account = Depends(require_user)) -> Account:
     response.headers["Cache-Control"] = "no-store"
