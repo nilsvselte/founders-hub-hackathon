@@ -3,11 +3,54 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { api, money } from "../market";
+import { api, money, photo } from "../market";
 import type { Room } from "../market";
 import { venueFacts } from "../venue-facts";
 import type { VenueFacts } from "../venue-facts";
 import styles from "./venues.module.css";
+
+function CatalogVenues({ rooms }: { rooms: Room[] }) {
+  const venues = new Map<string, Room[]>();
+  for (const room of rooms) {
+    const listings = venues.get(room.venue) ?? [];
+    listings.push(room);
+    venues.set(room.venue, listings);
+  }
+
+  return (
+    <section className={styles.catalog} aria-labelledby="catalog-title">
+      <div className={styles.catalogHeading}>
+        <h2 id="catalog-title">Venues on standbyroom</h2>
+        <p>{venues.size} venues · {rooms.length} rooms</p>
+      </div>
+      {venues.size ? (
+        <div className={styles.catalogGrid}>
+          {[...venues].sort(([first], [second]) => first.localeCompare(second)).map(([name, listings]) => {
+            const venuePhoto = listings.map((room) => photo(room.image_key)).find(Boolean);
+            const cities = [...new Set(listings.map((room) => room.city))].join(" · ");
+            return (
+              <article className="room-card" key={name}>
+                <Link className="room-card-link" href={`/?${new URLSearchParams({ location: name })}`}>
+                  <div className="room-card-photo">
+                    {venuePhoto ? (
+                      <Image src={venuePhoto.src} alt="" fill sizes="(max-width: 560px) 92vw, (max-width: 860px) 45vw, 30vw" />
+                    ) : <span className="room-photo-placeholder">Photo unavailable</span>}
+                    {venuePhoto?.isVenuePhoto && <span className="room-photo-label">Venue photo</span>}
+                  </div>
+                  <div className="room-card-body">
+                    <h3 className="room-card-title">{name}</h3>
+                    <p className="room-card-location">{cities}</p>
+                    <p className={styles.catalogLink}>View {listings.length} {listings.length === 1 ? "room" : "rooms"} <span aria-hidden="true">→</span></p>
+                  </div>
+                </Link>
+              </article>
+            );
+          })}
+        </div>
+      ) : <p className="browse-empty">There are no venues to browse yet.</p>}
+    </section>
+  );
+}
 
 function VenueSection({ venue, rooms }: { venue: VenueFacts; rooms: Room[] | null }) {
   const byId = new Map((rooms ?? []).map((room) => [room.id, room]));
@@ -94,34 +137,46 @@ function VenueSection({ venue, rooms }: { venue: VenueFacts; rooms: Room[] | nul
 export default function VenueDirectory() {
   const [rooms, setRooms] = useState<Room[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      controller.abort();
+      setFailed(true);
+    }, 12_000);
     api<Room[]>("rooms", { signal: controller.signal })
       .then((listing) => {
         if (!controller.signal.aborted) setRooms(listing);
       })
       .catch(() => {
         if (!controller.signal.aborted) setFailed(true);
-      });
-    return () => controller.abort();
-  }, []);
+      })
+      .finally(() => window.clearTimeout(timeout));
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [retry]);
 
   return (
     <main className={styles.page}>
       <header className={styles.hero}>
-        <p className="browse-kicker">Pilot venues · Trondheim</p>
-        <h1>Rooms that only members can book</h1>
+        <p className="browse-kicker">Venues · Trondheim & Stjørdal</p>
+        <h1>Find your next meeting space</h1>
         <p>
-          Kowork and Brighten both have meeting rooms that are included in their members’ rent. Neither sells room
-          time to anyone else, and neither publishes an hourly price. standbyroom lets them sell the hours their members
-          don’t use.
+          Explore coworking spaces, hotels and event venues. Choose a venue to browse its rooms and request a time.
         </p>
-        <nav className={styles.jump} aria-label="Venues">
-          {venueFacts.map((venue) => <a key={venue.id} href={`#${venue.id}`}>{venue.name}</a>)}
+        <nav className={styles.jump} aria-label="Pilot venue stories">
+          {venueFacts.map((venue) => <a key={venue.id} href={`#${venue.id}`}>About {venue.name}</a>)}
         </nav>
       </header>
-      {failed && <p className="status-note" role="status">Room listings couldn’t be loaded. Venue facts are shown without live prices.</p>}
+      {failed ? (
+        <div className="browse-empty">
+          <p role="alert">Venue listings couldn’t be loaded. Pilot venue facts are still shown below.</p>
+          <button className="browse-reset" type="button" onClick={() => { setFailed(false); setRetry((value) => value + 1); }}>Try again</button>
+        </div>
+      ) : rooms ? <CatalogVenues rooms={rooms} /> : <p className="browse-empty" role="status">Finding venues…</p>}
       {venueFacts.map((venue) => <VenueSection key={venue.id} venue={venue} rooms={rooms} />)}
     </main>
   );

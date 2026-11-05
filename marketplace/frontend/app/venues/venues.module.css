@@ -9,7 +9,7 @@
   text-wrap: balance;
 }
 .hero > p:not(:first-child) { max-width: 60ch; margin-top: 14px; color: var(--muted); font-size: clamp(14px, 1.4vw, 16px); }
-.jump { display: flex; gap: 10px; margin-top: 20px; }
+.jump { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 .jump a {
   padding: 7px 14px;
   border: 1px solid var(--line);
@@ -19,6 +19,13 @@
   text-decoration: none;
 }
 .jump a:hover { border-color: var(--accent); color: var(--accent); }
+
+.catalog { padding-block: clamp(32px, 5vw, 56px); border-bottom: 1px solid var(--line); }
+.catalogHeading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
+.catalogHeading h2 { font: 400 clamp(28px, 3.5vw, 42px)/1.1 var(--serif); letter-spacing: -.05em; }
+.catalogHeading p { color: var(--muted); font-size: 14px; }
+.catalogGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.catalogLink { margin-top: 10px; color: var(--accent); font-size: 13px; font-weight: 700; }
 
 .venue { padding-block: clamp(32px, 5vw, 56px); border-bottom: 1px solid var(--line); scroll-margin-top: 16px; }
 .venueHead { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(20px, 3.5vw, 44px); align-items: start; }
@@ -67,6 +74,10 @@
 
 @media (max-width: 860px) {
   .venueHead, .rooms { grid-template-columns: 1fr; }
+  .catalogGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .catalogGrid { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
   .lists { grid-template-columns: 1fr; }

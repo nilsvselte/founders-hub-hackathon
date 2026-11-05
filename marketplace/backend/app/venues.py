@@ -77,7 +77,7 @@ VENUES = {
         Venue(
             id="spaces-powerhouse",
             operator="IWG",
-            name="Spaces Powerhouse",
+            name="Regus Powerhouse",
             location="Brattørkaia 17A, Trondheim",
             booking_prefix="SPACES",
             demo_room_id="spaces-powerhouse-meeting-room",
