@@ -1,7 +1,7 @@
 // Product name lives here. Change it once and every [data-product] element and the tab title follow.
-const PRODUCT_NAME = 'Ledig';
+const PRODUCT_NAME = 'StandbyRooms';
 
-// The marketplace app every "Open Ledig" button points to ([data-marketplace]).
+// The marketplace app every "Open StandbyRooms" button points to ([data-marketplace]).
 const MARKETPLACE_URL = 'http://localhost:3000';
 
 document.title = PRODUCT_NAME;
