@@ -4,7 +4,7 @@
 .step-n { display: inline-block; width: 1.4em; font-variant-numeric: tabular-nums; color: var(--accent); opacity: 0.5; }
 .step.is-on .step-n { opacity: 1; }
 
-/* Why StandbyRooms */
+/* Why standbyroom */
 .why { background: linear-gradient(180deg, var(--ground) 0%, #121A2C 100%); }
 .why-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 56px; }
 .why-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 32px; display: flex; flex-direction: column; gap: 14px; }
