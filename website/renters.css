@@ -1,0 +1,84 @@
+/* Renters page (utleie.html): nav side switch, owner dashboard, control and pricing. Loads after styles/hero/spaces. */
+
+/* Nav: Find a room / Rent out rooms */
+.side-switch { display: inline-flex; padding: 3px; gap: 2px; border-radius: var(--r-full); border: 1px solid var(--border); background: rgba(222, 216, 198, 0.06); }
+.side-switch a { font-size: 14px; font-weight: 500; color: var(--muted); text-decoration: none; padding: 7px 14px; border-radius: var(--r-full); white-space: nowrap; transition: color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease); }
+.side-switch a:hover { color: var(--ink); }
+.side-switch a[aria-current="page"] { background: var(--ink); color: var(--accent-ink); }
+
+/* Owner dashboard in the hero */
+.board.owner { max-width: 880px; margin-left: auto; margin-right: auto; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+.rooms { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.room {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center;
+  background: rgba(15, 20, 32, 0.6); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 14px;
+  transition: border-color var(--t-mid) var(--ease), background-color var(--t-mid) var(--ease);
+}
+.room strong { color: var(--ink); font-weight: 600; }
+.room .note { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.room .chip { font-size: 12px; font-weight: 500; border-radius: var(--r-full); padding: 3px 10px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+.room.st-released { border-color: var(--accent); background: rgba(233, 182, 56, 0.06); }
+.room.st-released .chip { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.room.st-sold .chip { color: var(--good); border-color: rgba(127, 199, 154, 0.5); }
+.room.st-free .chip { color: var(--ink); }
+.room.just { animation: rise var(--t-mid) var(--spring) both; }
+
+.earn { border: 1px solid var(--accent); border-radius: var(--r-sm); background: rgba(233, 182, 56, 0.06); padding: 18px 20px; position: relative; }
+.earn p { font-size: 14px; color: var(--muted); }
+.earn .kr { font: 500 clamp(40px, 4.4vw, 56px)/1.05 var(--display); color: var(--accent); letter-spacing: -0.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.earn .plus { position: absolute; right: 18px; top: 16px; font: 600 15px/1 var(--text); color: var(--good); opacity: 0; }
+.earn .plus.go { animation: plus 1600ms var(--ease) both; }
+@keyframes plus { 0% { opacity: 0; transform: translateY(10px); } 20% { opacity: 1; transform: none; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
+.owner .log { min-height: 6.4em; }
+.owner .log span { display: block; animation: rise var(--t-mid) var(--ease) both; }
+.owner .log span::before { content: "› "; color: var(--dim); }
+.owner .log span:not(:last-child) { opacity: 0.6; }
+.owner .log .gold { color: var(--accent); }
+.agent-on { font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.agent-on::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 10px var(--good); }
+.owner.is-busy .agent-on { color: var(--accent); }
+.owner.is-busy .agent-on::before { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+
+/* What you control */
+.control { background: var(--ground); }
+.control-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; margin-top: 56px; }
+.ctl { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 28px; display: flex; flex-direction: column; gap: 12px; }
+.ctl-k { font-size: 14px; color: var(--accent); font-weight: 500; }
+.ctl h3 { font-size: 26px; line-height: 1.08; letter-spacing: -0.015em; }
+.ctl p:not(.ctl-k) { color: var(--ink-soft); font-size: 15px; }
+
+/* Pricing */
+.pricing { background: linear-gradient(180deg, var(--ground) 0%, #121A2C 100%); }
+.price-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; margin-top: 48px; }
+.price-main { border: 1px solid var(--accent); border-radius: var(--r-md); background: rgba(233, 182, 56, 0.06); padding: 40px; }
+.price-big { font: 500 clamp(80px, 10vw, 128px)/0.95 var(--display); color: var(--accent); letter-spacing: -0.03em; }
+.price-what { font: 500 26px/1.1 var(--display); color: var(--ink); margin: 8px 0 16px; }
+.price-main p:last-child { color: var(--ink-soft); }
+.price-list { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 8px 32px; }
+.price-list li { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 22px 0; border-top: 1px solid var(--border); }
+.price-list li:first-child { border-top: 0; }
+.price-list b { font: 500 36px/1 var(--display); color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.price-list span { color: var(--ink-soft); text-align: right; }
+
+@media (max-width: 1080px) {
+  .page-renters .nav nav { display: none; }
+}
+@media (max-width: 900px) {
+  .board.owner { grid-template-columns: 1fr; }
+  .control-grid { grid-template-columns: 1fr 1fr; }
+  .price-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .side-switch a { padding: 6px 10px; font-size: 13px; }
+  .control-grid { grid-template-columns: 1fr; }
+  .price-main { padding: 28px; }
+  .price-list { padding: 4px 20px; }
+}
+@media (max-width: 520px) {
+  .page-renters .nav-inner > .btn { display: none; }
+  .page-renters .nav-inner { gap: 8px; }
+  .side-switch a { padding: 6px 8px; font-size: 12.5px; }
+}
+@media (max-width: 900px) {
+  .board.owner .board-col:last-child { order: 0; }
+}

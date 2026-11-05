@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mesh standby</title>
+<title>Ledig</title>
 <meta name="description" content="Tell it what you need. It finds the room. Meeting rooms released early at Digs, Trondheim, matched to you by an agent.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,20 +11,23 @@
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="board.css">
 <link rel="stylesheet" href="hero.css">
-<link rel="stylesheet" href="spaces.css">
+<link rel="stylesheet" href="bookers.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 
 <header class="nav">
   <div class="container nav-inner">
-    <a class="wordmark" href="#top" data-product>Mesh standby</a>
+    <a class="wordmark" href="#top" data-product>Ledig</a>
+    <nav class="side-switch" aria-label="Choose side">
+      <a href="index.html" aria-current="page">Find a room</a>
+      <a href="utleie.html">Rent out rooms</a>
+    </nav>
     <nav aria-label="Main">
       <a href="#how">How it works</a>
-      <a href="#spaces">For spaces</a>
-      <a href="#device">The button</a>
+      <a href="#why">Why Ledig</a>
     </nav>
-    <a class="btn btn-primary btn-sm" href="#marketplace">Open marketplace</a>
+    <a class="btn btn-primary btn-sm" href="http://localhost:3000" data-marketplace>Open Ledig</a>
   </div>
 </header>
 
@@ -35,10 +38,10 @@
     <div class="container hero-copy">
       <p class="where">Live at Digs, Trondheim</p>
       <h1>Tell it what you need.<br><em>It finds the room.</em></h1>
-      <p class="lead">Set your time, group size, equipment, budget and how flexible you are. An agent ranks every room at Digs against them, and books the best fit the moment one frees up.</p>
+      <p class="lead">Say when, how many, what kit and what you will pay. An agent ranks every room at Digs against it, and quotes you the best fit the moment one frees up, often below list price.</p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="#marketplace">Set my preferences</a>
-        <a class="btn btn-ghost" href="#spaces">Sell idle room time</a>
+        <a class="btn btn-primary" href="http://localhost:3000" data-marketplace>Open Ledig</a>
+        <a class="btn btn-ghost" href="#how">See how it works</a>
       </div>
     </div>
 
@@ -46,6 +49,7 @@
       <div class="board" aria-label="Live demo: the agent matching rooms to a request">
         <div class="board-col">
           <div class="board-head"><h2 class="board-title">Your preferences</h2><span class="demo-tag">Demo</span></div>
+          <button class="prefs-sum" id="prefs-sum" type="button" aria-expanded="false" aria-controls="prefs"><span class="prefs-sum-text" id="prefs-sum-text">4 people · 45 min · screen + whiteboard · ≤300 kr</span><span class="prefs-sum-edit">Edit</span></button>
           <form class="prefs" id="prefs" aria-label="Your preferences: change any to re-rank">
             <div class="pf pf-when"><span class="pf-label">When, today</span>
               <span class="pf-times"><input type="time" name="from" value="15:15" step="300" aria-label="From"><span aria-hidden="true">–</span><input type="time" name="to" value="16:30" step="300" aria-label="To"></span></div>
@@ -85,25 +89,13 @@
     </div>
   </section>
 
-  <section class="problem">
-    <div class="container">
-      <p class="big-line">The meeting ended early. The room is paid for, empty, and nobody knows.</p>
-      <ul class="pfacts">
-        <li><b>~1 in 3</b><span class="est">estimate</span><br>booked meetings end before their slot does.</li>
-        <li><b>20–40 min</b><span class="est">estimate</span><br>left over each time, too short to rebook by hand.</li>
-        <li><b>0 kr</b><br>earned from that time today. It just disappears.</li>
-      </ul>
-      <p class="pfacts-note">Estimates for a Digs-sized coworking house, not measured data.</p>
-    </div>
-  </section>
-
   <section class="how" id="how">
     <div class="container">
       <h2 class="section-title">How it works</h2>
       <div class="how-grid">
         <div class="how-visual" aria-hidden="true">
           <div class="panel" data-panel="0">
-            <p class="panel-label">Standby request</p>
+            <p class="panel-label">Your request</p>
             <p class="panel-big">3 people, a screen, before 16:30, under 300 kr</p>
             <ul class="mini"><li>Window <span>15:15–16:30</span></li><li>Duration <span>30–60 min</span></li><li>Flexible <span>±15 min</span></li></ul>
           </div>
@@ -115,107 +107,40 @@
             <p class="panel-label">Quote</p>
             <p class="panel-big">Bakklandet, 15:25–16:00</p>
             <p class="panel-price">180 kr</p>
-            <ul class="mini"><li>Space's floor <span>150 kr</span></li><li>List price <span>320 kr</span></li><li>Rechecked before booking <span>yes</span></li></ul>
+            <ul class="mini"><li>List price <span>320 kr</span></li><li>Held for you <span>2 min</span></li><li>Rechecked before booking <span>yes</span></li></ul>
           </div>
         </div>
         <ol class="steps">
-          <li><button class="step is-on" type="button" data-step="0" aria-pressed="true">Tell it what you need</button>
-            <p>Time window, length, group size, equipment, budget and how flexible you are. Leave it once; it keeps watching.</p></li>
-          <li><button class="step" type="button" data-step="1" aria-pressed="false">It watches and ranks</button>
+          <li><button class="step is-on" type="button" data-step="0" aria-pressed="true"><span class="step-n">1</span>Set your needs</button>
+            <p>Time window, length, group size, equipment, budget and how flexible you are. Say it once; the agent keeps it.</p></li>
+          <li><button class="step" type="button" data-step="1" aria-pressed="false"><span class="step-n">2</span>The agent watches and ranks</button>
             <p>Every free room and every early release is scored against your request, with the reason it fits or doesn't.</p></li>
-          <li><button class="step" type="button" data-step="2" aria-pressed="false">It books the best fit</button>
-            <p>It quotes a price inside the space's limits and holds the slot. You accept, it rechecks and confirms. If the slot is gone, it finds the next one.</p></li>
+          <li><button class="step" type="button" data-step="2" aria-pressed="false"><span class="step-n">3</span>Get a quote, accept</button>
+            <p>When the best fit opens, you get a price and the slot is held for you. One tap accepts; the agent rechecks and books it.</p></li>
         </ol>
       </div>
     </div>
   </section>
 
-  <section class="doors" id="spaces">
+  <section class="why" id="why">
     <div class="container">
-      <h2 class="section-title">Two sides, one button between them</h2>
-      <div class="door-grid">
-        <article class="door">
-          <p class="door-who">For people who need a room</p>
-          <h3>An agent that finds the room that suits you.</h3>
-          <p>Tell it once what you need. When a room opens that fits, you get a quote, often well below list price, and one tap books it.</p>
-          <a class="link" href="#marketplace">Set my preferences</a>
+      <h2 class="section-title">Why Ledig</h2>
+      <div class="why-grid">
+        <article class="why-card">
+          <p class="why-k">Cheaper</p>
+          <h3>Last-minute rooms, below list price.</h3>
+          <p>Rooms freed by meetings that end early go at standby prices, set inside each space's limits.</p>
         </article>
-        <article class="door">
-          <p class="door-who">For spaces with rooms to fill</p>
-          <h3>Sell the hour you were going to lose.</h3>
-          <p>Staff press one button when a meeting ends early. You set the floor and ceiling price; the agent fills the gap. Free to list; we keep 15% of each standby booking.</p>
-          <a class="link" href="#worth">What is my idle time worth?</a>
+        <article class="why-card">
+          <p class="why-k">No hunting</p>
+          <h3>No calendars to refresh.</h3>
+          <p>You say what you need once. The agent checks every room at Digs against it and tells you why each one fits or doesn't.</p>
         </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="worth" id="worth" aria-labelledby="worth-h">
-    <div class="container">
-      <div class="worth-card">
-        <div>
-          <h2 id="worth-h">What idle time is worth</h2>
-          <p class="worth-sub">Time your rooms already lose each week, sold at standby prices. Move the sliders to match your space.</p>
-          <form class="calc" id="worth-calc">
-            <div>
-              <label for="w-rooms">Meeting rooms <output id="o-rooms" for="w-rooms">8</output></label>
-              <input type="range" id="w-rooms" name="rooms" min="1" max="30" step="1" value="8">
-            </div>
-            <div>
-              <label for="w-hrs">Hours freed per room, per week <output id="o-hours" for="w-hrs">6 h</output></label>
-              <input type="range" id="w-hrs" name="hours" min="1" max="20" step="1" value="6">
-            </div>
-            <div>
-              <label for="w-price">Standby price per hour <output id="o-price" for="w-price">300 kr</output></label>
-              <input type="range" id="w-price" name="price" min="100" max="800" step="25" value="300">
-            </div>
-          </form>
-        </div>
-        <div class="worth-out">
-          <div class="worth-total" aria-live="polite">
-            <p>You keep, per month</p>
-            <p class="kr" id="w-total">53 040 kr</p>
-            <p>from time that earns nothing today</p>
-          </div>
-          <ul class="worth-math">
-            <li>Freed hours per month <span id="w-hours">208 h</span></li>
-            <li>Sold at your price <span id="w-gross">62 400 kr</span></li>
-            <li>Platform fee, 15% <span id="w-fee">− 9 360 kr</span></li>
-            <li>Per year, after fee <span id="w-year">636 480 kr</span></li>
-          </ul>
-          <p class="controls-h">You stay in control</p>
-          <ul class="controls">
-            <li><b>Price floor and ceiling</b> The agent quotes only inside your limits, per room.</li>
-            <li><b>Turnaround buffer</b> Minutes kept free to tidy before the next guest.</li>
-            <li><b>Rooms and hours</b> Choose which rooms can go on standby, and when.</li>
-          </ul>
-          <p class="worth-note">Estimate. Assumes every freed hour sells; real fill will be lower at first.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="device" id="device">
-    <div class="container device-grid">
-      <div class="device-art">
-        <div>
-          <div class="unit">
-            <div class="unit-led" id="unit-led" aria-hidden="true"></div>
-            <div class="unit-screen" id="unit-screen" aria-live="polite">Ready</div>
-            <button class="unit-btn press" id="unit-release" type="button">Release room</button>
-            <div class="unit-label">Bakklandet · 2nd floor</div>
-          </div>
-          <p class="unit-hint">Try it: press the button.</p>
-        </div>
-      </div>
-      <div>
-        <h2 class="section-title">One press when the meeting ends</h2>
-        <p class="lead">A small device by the door. Staff press it when a room is ready, and the rest of the hour goes on sale.</p>
-        <dl class="facts">
-          <div><dt>One press</dt><dd>No app to open and nothing to type.</dd></div>
-          <div><dt>5-minute buffer</dt><dd>Time to tidy the room before the next guest arrives.</dd></div>
-          <div><dt>No new software for staff</dt><dd>Prices and limits are set once by the space.</dd></div>
-        </dl>
+        <article class="why-card">
+          <p class="why-k">It waits for you</p>
+          <h3>The agent does the waiting.</h3>
+          <p>Nothing fits yet? It keeps watching, and the moment a room frees up you get a quote held just for you.</p>
+        </article>
       </div>
     </div>
   </section>
@@ -225,8 +150,7 @@
       <h2 class="closing-title">Your next room is <em>about to open.</em></h2>
       <p class="lead">Live at Digs, Trondheim. Leave your request now and the agent starts watching.</p>
       <div class="cta-row center">
-        <a class="btn btn-primary" href="#marketplace">Open marketplace</a>
-        <a class="btn btn-ghost" href="#spaces">Sell idle room time</a>
+        <a class="btn btn-primary" href="http://localhost:3000" data-marketplace>Open Ledig</a>
       </div>
     </div>
   </section>
@@ -234,7 +158,7 @@
 
 <footer class="footer">
   <div class="container footer-inner">
-    <p class="footer-name" data-product>Mesh standby</p>
+    <p class="footer-name" data-product>Ledig</p>
     <p class="footer-note">Built at the DNB × Founders Hub hackathon, Trondheim, November 2026. All rooms, times and prices on this page are demo data.</p>
   </div>
 </footer>
@@ -243,7 +167,6 @@
 <script src="board-data.js"></script>
 <script src="board.js"></script>
 <script src="hero-art.js"></script>
-<script src="spaces.js"></script>
 <script src="i18n.js"></script>
 </body>
 </html>

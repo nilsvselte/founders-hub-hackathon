@@ -1,0 +1,45 @@
+/* Bookers page (index.html): why-section, step numbers, phone board. Loads after board.css. */
+
+/* How: step numbers */
+.step-n { display: inline-block; width: 1.4em; font-variant-numeric: tabular-nums; color: var(--accent); opacity: 0.5; }
+.step.is-on .step-n { opacity: 1; }
+
+/* Why Ledig */
+.why { background: linear-gradient(180deg, var(--ground) 0%, #121A2C 100%); }
+.why-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 56px; }
+.why-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 32px; display: flex; flex-direction: column; gap: 14px; }
+.why-k { font-size: 14px; color: var(--accent); font-weight: 500; }
+.why-card h3 { font-size: 28px; line-height: 1.08; letter-spacing: -0.015em; }
+.why-card p:not(.why-k) { color: var(--ink-soft); }
+
+/* Preferences summary row: phones only */
+.prefs-sum { display: none; }
+
+@media (max-width: 900px) {
+  .why-grid { grid-template-columns: 1fr; gap: 16px; }
+}
+@media (max-width: 720px) {
+  .why-card { padding: 24px; }
+  .why-card h3 { font-size: 24px; }
+
+  /* Board: preferences collapse into one row that expands */
+  .board .board-col { gap: 12px; }
+  .prefs-sum {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
+    font: 500 14px/1.35 var(--text); color: var(--ink); text-align: left; cursor: pointer;
+    background: rgba(222, 216, 198, 0.08); border: 1px solid var(--border); border-radius: var(--r-sm);
+    padding: 12px 14px; min-height: 44px;
+  }
+  .prefs-sum-text { min-width: 0; }
+  .prefs-sum-edit { flex: none; color: var(--muted); font-size: 13px; text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; }
+  .prefs-sum[aria-expanded="true"] .prefs-sum-edit { color: var(--ink); }
+  .board:not(.prefs-open) .prefs { display: none; }
+
+  /* Log wraps instead of cutting lines off; keeps the newest at the bottom */
+  .board .log { height: auto; min-height: 7.6em; font-size: 12px; padding: 10px 12px; justify-content: flex-start; }
+  .board .log span { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+  .board .log span:nth-last-child(n+4) { display: none; }
+
+  .board .matches .m { padding: 10px 12px 12px; gap: 10px; }
+  .board .hint { font-size: 13px; }
+}
