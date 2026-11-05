@@ -64,3 +64,5 @@ An operator can create a short-lived port-3000 link using `daytona preview-url`.
 ## Production
 
 Use a dedicated API service and database with backups. Set the backend's `DATABASE_URL` and `MARKETPLACE_SECURE_COOKIES=1`. Leave demo mode off and configure `ANTHROPIC_API_KEY` for matching. Set the Vercel project's **Production** `MARKETPLACE_API_URL` to the production API origin. Verify the production API's `/ready` and run `vercel deploy --prod` from the linked repository root when the release is ready.
+
+The public landing site links to `https://app.standbyroom.com`. The Vercel marketplace uses `https://api.standbyroom.com`, the API service on the team server. Vercel production builds reject `vercel.run` sandbox origins because those endpoints expire when the sandbox stops.

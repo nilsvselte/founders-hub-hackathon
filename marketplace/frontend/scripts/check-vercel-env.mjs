@@ -1,7 +1,9 @@
 const originKey = process.env.MARKETPLACE_API_MODE === "private-proxy"
   ? "MARKETPLACE_PRIVATE_API_URL"
   : "MARKETPLACE_API_URL";
-const error = `Set ${originKey} to the hosted API's HTTPS origin before deploying.`;
+const production = process.env.VERCEL_ENV === "production";
+const error = `Set ${originKey} to the hosted API's HTTPS origin before deploying.`
+  + (production ? " Production requires a persistent service outside Vercel Sandbox." : "");
 const frontendHosts = [process.env.VERCEL_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL];
 const value = process.env[originKey] ?? "";
 
@@ -21,7 +23,8 @@ try {
     hostname === "0.0.0.0" ||
     hostname.startsWith("127.") ||
     hostname === "[::1]" ||
-    frontendHosts.includes(hostname)
+    frontendHosts.includes(hostname) ||
+    (production && (hostname === "vercel.run" || hostname.endsWith(".vercel.run")))
   ) {
     throw new Error(error);
   }
