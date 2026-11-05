@@ -217,3 +217,24 @@ def test_two_devices_one_room(env):
     send(client, clock, PERSON, device="dev-2", advance=0)
     send(client, clock, EMPTY, device="dev-1")
     assert send(client, clock, PERSON, device="dev-2", advance=0)["occupied"] is True
+
+
+def test_calibrate_button(env):
+    client, _, clock = env
+    furniture = [2000] * 54 + [800] * 10
+    send(client, clock, furniture)
+    assert send(client, clock, furniture)["occupied"] is True  # uncalibrated: table looks like a person
+    assert send(client, clock, furniture, buttons={"calibrate": 1})["occupied"] is False
+    send(client, clock, furniture)
+    assert send(client, clock, furniture)["occupied"] is False
+
+
+def test_out_of_range_zones_are_ignored(env):
+    client, _, clock = env
+    send(client, clock, [32767] * 64)
+    client.post("/v1/rooms/digs-demo-1/calibrate").raise_for_status()
+    flicker = [3900] * 64  # far wall flickering in and out of range
+    send(client, clock, flicker)
+    assert send(client, clock, flicker)["occupied"] is False
+    send(client, clock, [32767] * 60 + [900] * 4)
+    assert send(client, clock, [32767] * 60 + [900] * 4)["occupied"] is True

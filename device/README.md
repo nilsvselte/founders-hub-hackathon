@@ -18,9 +18,10 @@ The marketplace owns bookings, no-show and overstay decisions, auto-release, and
 Each board uses the following modules:
 
 - **ToF sensor (VL53L5CX, 8×8):** the main presence signal. It measures 64 distances, and a person shows up as zones closer than the calibrated empty-room baseline. It is not a camera.
-- **CO₂ sensor (SCD40):** a supporting signal, also used for display.
-- **Buttons:** manual actions. Button 1 is **Release room**.
-- **LED grid (optional):** shows what the sensor sees, green for empty and red for occupied.
+- **Temperature and humidity (AHT20):** context for the room view. The demo kit has no CO₂ sensor; `co2_ppm` stays in the contract for boards that have one.
+- **Buttons:** the **Release room** button's RGB light shows room status: green for empty, red for occupied, and blue when the board cannot reach the server. The **Calibrate** button stores the empty-room baseline.
+
+The demo board is a 14-port board: ToF on port 1, AHT20 on port 11, Release on port 13, and Calibrate on port 14.
 
 The board sends readings about every 3 seconds. The server makes every decision, so changing thresholds does not need a reflash. WiFi is 2.4 GHz only. A phone hotspot works, and on an iPhone you must turn on **Maximize Compatibility**. The board and the device server's machine must be on the same network.
 
@@ -36,14 +37,14 @@ All timestamps are ISO 8601 with a timezone offset. Room IDs are the marketplace
 {"device_id": "dev-1", "seq": 812, "uptime_ms": 2436000,
  "tof_mm": [1830, 1825, "... 64 values, row-major"],
  "co2_ppm": 640, "temp_c": 22.4, "rh_pct": 38.1,
- "buttons": {"release": 1}}
+ "buttons": {"release": 1, "calibrate": 0}}
 ```
 
 `buttons` counts presses since the previous report. A press is also sent at once. The response is `{"ok": true, "room_id": "digs-demo-1", "occupied": true}`, and the board uses `occupied` for the LED.
 
 Devices map to rooms in the server's `.env`, for example `DEVICES=dev-1:digs-demo-1`. A room can have several devices, and it counts as occupied when any of them sees someone.
 
-`POST /v1/rooms/{room_id}/calibrate` stores the current ToF frame as the empty-room baseline. Run it once per room while the room is empty.
+`POST /v1/rooms/{room_id}/calibrate` stores the current ToF frame as the empty-room baseline. Run it once per room while the room is empty. Pressing the board's **Calibrate** button does the same thing.
 
 ### 2. Marketplace → device server (marketplace pulls)
 
@@ -109,4 +110,13 @@ To calibrate a room, empty it, let the board report for a few seconds, and then 
 curl -X POST http://127.0.0.1:8100/v1/rooms/digs-demo-1/calibrate
 ```
 
-Firmware setup goes here once `firmware/` exists.
+## Flash the firmware
+
+Install the Atech SDK with `uv tool install atech --with-executables-from platformio`. The PlatformIO part puts `pio` on the PATH, which `atech build` needs. Run these from `device/firmware/`.
+
+```sh
+cp secrets.example.h secrets.h   # then fill in the WiFi password and the server address
+atech validate . && atech upload .
+```
+
+`secrets.h` is gitignored. `SERVER_URL` must use the device server machine's address on the hotspot, such as `http://172.20.10.3:8100/v1/telemetry`, and the server must run with `--host 0.0.0.0`. After flashing, the Release button turns blue while the board connects, then green or red once the server answers.

@@ -12,6 +12,8 @@ from collections.abc import Sequence
 from .config import Settings
 
 TOF_ZONES = 64
+# The VL53L5CX ranges to about 4 m and reports a large sentinel when a zone sees nothing.
+MAX_RANGE_MM = 4000
 
 
 def valid_frame(tof_mm: Sequence[object] | None) -> list[int | None] | None:
@@ -22,8 +24,8 @@ def valid_frame(tof_mm: Sequence[object] | None) -> list[int | None] | None:
         raise ValueError(f"tof_mm must have {TOF_ZONES} values")
     zones: list[int | None] = []
     for value in tof_mm:
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
-            zones.append(None)  # 0 or negative means the sensor had no valid target
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 < value < MAX_RANGE_MM:
+            zones.append(None)  # no valid target in this zone
         else:
             zones.append(int(value))
     return zones

@@ -105,6 +105,11 @@ def create_app(store: Store | None = None, *, start_push: bool = True) -> FastAP
             room_id, occupied = store.ingest(TelemetryIn(**body.model_dump()), at)
         except UnknownDevice:
             raise HTTPException(404, f"Unknown device {body.device_id!r}; add it to DEVICES")
+        if body.buttons.get("calibrate", 0) > 0:
+            # Staff pressed the calibrate button: the room is empty right now.
+            with suppress(NothingToCalibrate):
+                store.calibrate(room_id, at)
+                occupied = False
         return {"ok": True, "room_id": room_id, "occupied": occupied}
 
     @app.get("/v1/rooms")

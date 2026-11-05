@@ -1,0 +1,105 @@
+name: standbyroom-sensor
+board: 14port
+# Port layout of the demo board (found with an I2C scan):
+#   1  ToF distance sensor (VL53L5CX, 8x8)  -> presence
+#   11 AHT20 temperature + humidity
+#   13 button "release"   (its RGB light shows room status: green empty, red occupied)
+#   14 button "calibrate" (press in an empty room to store the empty-room baseline)
+modules:
+  - {id: distance_sensor, instance: tof, port: 1}
+  - {id: aht20, instance: th, port: 11}
+  - {id: button, instance: release_btn, port: 13}
+  - {id: button, instance: calibrate_btn, port: 14}
+code:
+  globals: |
+    // WiFi, server address and device id. Copy secrets.example.h to secrets.h
+    // (gitignored) next to project.yaml. The generated main.cpp is in build/src/.
+    #include "../../secrets.h"
+    #include <WiFi.h>
+    #include <HTTPClient.h>
+
+    static const uint32_t REPORT_EVERY_MS = 3000;
+    static const uint32_t WIFI_RETRY_MS = 10000;
+
+    // The board stays dumb: it sends raw readings, the device server decides occupancy.
+    static void showStatus(int state) {  // 0 = no server, 1 = empty, 2 = occupied
+      if (state == 2) release_btn.setColor(255, 0, 0);
+      else if (state == 1) release_btn.setColor(0, 255, 0);
+      else release_btn.setColor(0, 0, 255);
+    }
+
+    static int postTelemetry(uint32_t seq, int releases, int calibrations) {
+      String body;
+      body.reserve(700);
+      body += "{\"device_id\":\"" DEVICE_ID "\",\"seq\":";
+      body += seq;
+      body += ",\"uptime_ms\":";
+      body += millis();
+      if (tof_ok && tof.isReady()) {
+        int16_t grid[64];
+        tof.getDistanceGrid(grid);
+        body += ",\"tof_mm\":[";
+        for (int i = 0; i < 64; i++) {
+          if (i) body += ',';
+          body += grid[i];
+        }
+        body += ']';
+      }
+      if (th.isConnected()) {
+        body += ",\"temp_c\":";
+        body += String(th.readTemperature(), 1);
+        body += ",\"rh_pct\":";
+        body += String(th.readHumidity(), 1);
+      }
+      body += ",\"buttons\":{\"release\":";
+      body += releases;
+      body += ",\"calibrate\":";
+      body += calibrations;
+      body += "}}";
+
+      HTTPClient http;
+      http.setTimeout(1500);
+      http.setConnectTimeout(1500);
+      if (!http.begin(SERVER_URL)) return 0;
+      http.addHeader("Content-Type", "application/json");
+      if (sizeof(DEVICE_TOKEN) > 1) http.addHeader("Authorization", "Bearer " DEVICE_TOKEN);
+      int code = http.POST(body);
+      int state = 0;
+      if (code == 200) {
+        String reply = http.getString();
+        state = reply.indexOf("\"occupied\":true") >= 0 ? 2 : 1;
+      } else {
+        Serial.printf("telemetry POST failed: %d\n", code);
+      }
+      http.end();
+      return state;
+    }
+  setup: |
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    showStatus(0);
+  loop: |
+    static uint32_t seq = 0, lastReport = 0, lastWifiTry = 0;
+    static int releases = 0, calibrations = 0;
+
+    if (release_btn.wasPressed()) releases++;
+    if (calibrate_btn.wasPressed()) calibrations++;
+
+    if (WiFi.status() != WL_CONNECTED) {
+      showStatus(0);
+      if (millis() - lastWifiTry > WIFI_RETRY_MS) {
+        lastWifiTry = millis();
+        Serial.println("wifi: connecting");
+        WiFi.disconnect();
+        WiFi.begin(WIFI_SSID, WIFI_PASS);
+      }
+      return;
+    }
+
+    bool pressed = releases > 0 || calibrations > 0;
+    if (pressed || millis() - lastReport >= REPORT_EVERY_MS) {
+      lastReport = millis();
+      int state = postTelemetry(++seq, releases, calibrations);
+      if (state != 0) releases = calibrations = 0;  // keep presses until the server has them
+      showStatus(state);
+    }
