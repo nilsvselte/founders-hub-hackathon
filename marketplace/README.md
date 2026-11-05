@@ -59,7 +59,7 @@ Open `http://localhost:3000`. Next.js forwards `/api/*` to Uvicorn so browser re
 
 Set `ANTHROPIC_API_KEY` in the backend environment to use Claude. You can override the model with `ANTHROPIC_MODEL`. Without a key, demo mode uses a deterministic matcher and labels its offers as demo matches. Keep demo mode disabled outside local development.
 
-To test the host side, register as a host, create a listing, publish it, and release an opening from the host dashboard. Use a separate browser session to book it as a renter. The initial catalog includes pilot listings and fictional sample venues, with illustrative photography.
+To test the host side, register as a host, create a listing, publish it, and release an opening from the host dashboard. Use a separate browser session to book it as a renter.
 
 ## Pilot venues
 
@@ -74,6 +74,8 @@ MARKETPLACE_VENUE=kowork MARKETPLACE_DEMO_MODE=1 docker compose up --build -d --
 The Kowork seed includes the shared meeting room, listed for groups of 8 to 12, and a quiet room. The capacity information comes from [Koteng](https://koteng.no/). The equipment and prices are sample values pending confirmation from Kowork. The catalog uses Kowork’s own meeting-room photo from [Koteng](https://koteng.no/). See [the venue migration](backend/app/migrations/002_venues.sql).
 
 Brighten lists a meeting room and a phone pod. Their capacities, equipment, and prices are placeholders until Brighten confirms them. The catalog uses Brighten’s meeting-room photo from [Brighten](https://brighten.no/).
+
+Mesh’s Digs listings use Mesh Community’s room photography for Driv and its shared Gnist and Spark gallery. Listings without a verified image are shown without a room photograph. [Mesh Community’s Trondheim room gallery](https://meshcommunity.com/trondheim/meeting-event)
 
 ## Connect a device
 

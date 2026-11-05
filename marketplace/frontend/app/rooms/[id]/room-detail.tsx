@@ -11,6 +11,7 @@ import Standby from "../../standby";
 export default function RoomDetail({ roomId }: { roomId: string }) {
   const [room, setRoom] = useState<Room | null>(null);
   const [failed, setFailed] = useState(false);
+  const roomPhoto = photo(room?.image_key);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -41,8 +42,13 @@ export default function RoomDetail({ roomId }: { roomId: string }) {
             <h1>{room.name}</h1>
             <p>{room.venue} · {room.city}</p>
           </div>
-          <div className="room-hero room-detail-photo">
-            <Image src={photo(room)} alt="" width={1200} height={800} sizes="(max-width: 700px) 100vw, 1200px" priority />
+          <div className="room-hero room-detail-photo room-photo-frame">
+            {roomPhoto ? (
+              <Image src={roomPhoto.src} alt="" width={1200} height={800} sizes="(max-width: 700px) 100vw, 1200px" priority />
+            ) : (
+              <span className="room-photo-placeholder">Photo unavailable</span>
+            )}
+            {roomPhoto?.isVenuePhoto && <span className="room-photo-label">Venue photo</span>}
           </div>
           <div className="room-details">
             <section className="room-overview">

@@ -42,11 +42,18 @@ function Icon({ name }: { name: IconName }) {
 }
 
 function RoomCard({ room }: { room: Room }) {
+  const roomPhoto = photo(room.image_key);
+
   return (
     <article className="room-card">
       <Link href={`/rooms/${encodeURIComponent(room.id)}`} className="room-card-link">
         <div className="room-card-photo">
-          <Image src={photo(room)} alt="" fill sizes="(max-width: 560px) 92vw, (max-width: 900px) 45vw, 25vw" />
+          {roomPhoto ? (
+            <Image src={roomPhoto.src} alt="" fill sizes="(max-width: 560px) 92vw, (max-width: 900px) 45vw, 25vw" />
+          ) : (
+            <span className="room-photo-placeholder">Photo unavailable</span>
+          )}
+          {roomPhoto?.isVenuePhoto && <span className="room-photo-label">Venue photo</span>}
           <span className="room-card-kind">{room.kind}</span>
         </div>
         <div className="room-card-body">
@@ -55,7 +62,7 @@ function RoomCard({ room }: { room: Room }) {
             <Icon name="arrow" />
           </div>
           <p className="room-card-location">{room.venue} · {room.city}</p>
-          <p className="room-card-meta">Up to {room.capacity} people</p>
+          <p className="room-card-meta">Up to {room.capacity} {room.capacity === 1 ? "person" : "people"}</p>
           <p className="room-card-price"><strong>{money(room.hourly_rate_ore)}</strong> <span>/ hour</span></p>
         </div>
       </Link>
@@ -85,11 +92,22 @@ export default function Browse() {
   }, [retry]);
 
   const searchTerm = filters.location.toLocaleLowerCase();
+  const availableKinds = categories.filter((kind) => kind !== "All spaces" && rooms.some((room) => room.kind === kind));
+  const useVenueFilters = loadState === "ready" && availableKinds.length < 2;
+  const venueNames = [...new Set(rooms.map((room) => room.venue))].sort();
+  const options: Array<{ key: string; label: string; icon: IconName }> = [
+    { key: "All spaces", label: "All spaces", icon: "grid" },
+    ...(useVenueFilters
+      ? venueNames.map((name) => ({ key: `venue:${name}`, label: name, icon: "map" as const }))
+      : availableKinds.map((kind) => ({ key: kind, label: kind, icon: categoryIcons[kind] }))),
+  ];
   const matches = rooms.filter((room) => {
     const locationText = `${room.city} ${room.venue} ${room.name}`.toLocaleLowerCase();
+    const matchesCategory = category === "All spaces"
+      || (category.startsWith("venue:") ? room.venue === category.slice(6) : room.kind === category);
     return locationText.includes(searchTerm)
       && room.capacity >= filters.guests
-      && (category === "All spaces" || room.kind === category);
+      && matchesCategory;
   });
   const isFiltered = !!filters.location || filters.guests > 0 || category !== "All spaces";
   const cities = [...new Set(rooms.map((room) => room.city))].sort();
@@ -130,11 +148,11 @@ export default function Browse() {
         <button className="browse-search-button" type="submit"><Icon name="search" /> <span>Search</span></button>
       </form>
 
-      <div className="browse-categories" role="group" aria-label="Room type">
-        {categories.map((kind) => (
-          <button className="browse-category" key={kind} type="button" aria-pressed={category === kind} onClick={() => setCategory(kind)}>
-            <Icon name={categoryIcons[kind]} />
-            <span>{kind}</span>
+      <div className="browse-categories" role="group" aria-label={useVenueFilters ? "Venue" : "Room type"}>
+        {options.map(({key, label, icon}) => (
+          <button className="browse-category" key={key} type="button" aria-pressed={category === key} onClick={() => setCategory(key)}>
+            <Icon name={icon} />
+            <span>{label}</span>
           </button>
         ))}
       </div>
@@ -157,10 +175,7 @@ export default function Browse() {
           </div>
         )}
         {loadState === "ready" && (matches.length ? (
-          <>
-            <div className="room-grid">{matches.map((room) => <RoomCard key={room.id} room={room} />)}</div>
-            <p className="browse-count">Room photos are illustrative.</p>
-          </>
+          <div className="room-grid">{matches.map((room) => <RoomCard key={room.id} room={room} />)}</div>
         ) : (
           <div className="browse-empty">
             <p>{isFiltered ? "No rooms match those filters." : "There are no rooms to browse yet."}</p>

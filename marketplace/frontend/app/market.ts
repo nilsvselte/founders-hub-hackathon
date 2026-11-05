@@ -45,8 +45,11 @@ export function money(ore: number) {
   return price.format(ore / 100);
 }
 
-const roomImages = new Set(["studio", "workshop", "huddle", "boardroom", "brighten-meeting-room", "kowork-meeting-room"]);
+const roomPhotos = new Set(["digs-driv", "brighten-meeting-room", "kowork-meeting-room"]);
+const venuePhotos = new Set(["digs-gnist-spark"]);
 
-export function photo(room: Room) {
-  return `/rooms/${roomImages.has(room.image_key) ? room.image_key : "studio"}.webp`;
+export function photo(imageKey: string | null | undefined) {
+  const key = imageKey?.replace(/\.webp$/, "");
+  if (!key || (!roomPhotos.has(key) && !venuePhotos.has(key))) return null;
+  return { src: `/rooms/${key}.webp`, isVenuePhoto: venuePhotos.has(key) };
 }

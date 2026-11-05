@@ -16,6 +16,19 @@ function failureMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong. Please try again.";
 }
 
+function ListingThumbnail({ imageKey }: { imageKey: string }) {
+  const roomPhoto = photo(imageKey);
+  return (
+    <div
+      className={`${styles.thumb} room-photo-frame`}
+      style={roomPhoto ? { backgroundImage: `url("${roomPhoto.src}")` } : undefined}
+      aria-hidden={roomPhoto?.isVenuePhoto ? undefined : true}
+    >
+      {roomPhoto?.isVenuePhoto && <span className="room-photo-label">Venue photo</span>}
+    </div>
+  );
+}
+
 export default function HostPage() {
   const { account, loading } = useAccount();
 
@@ -192,7 +205,7 @@ function HostDashboard() {
           )}
           {listings.map((room) => (
             <article className={styles.room} key={room.id}>
-              <div className={styles.thumb} style={{ backgroundImage: `url("${photo(room)}")` }} aria-hidden="true" />
+              <ListingThumbnail imageKey={room.image_key} />
               <div className={styles.roomInfo}>
                 <div className={styles.roomMeta}>
                   <span>{room.kind}</span>

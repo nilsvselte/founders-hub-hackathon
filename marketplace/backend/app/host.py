@@ -16,12 +16,6 @@ RoomKind = Literal["Studio", "Workshop", "Meeting room", "Boardroom"]
 ShortText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
 Description = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1800)]
 
-_IMAGE_KEYS: dict[RoomKind, str] = {
-    "Studio": "studio",
-    "Workshop": "workshop",
-    "Meeting room": "huddle",
-    "Boardroom": "boardroom",
-}
 _COLUMNS = "id, name, city, venue_name AS venue, kind, description, image_key, capacity, equipment, hourly_rate_ore, published"
 
 
@@ -82,7 +76,7 @@ def _owned_room(connection, room_id: str, owner_id: UUID, *, lock: bool = False)
 def _details(room: HostRoomInput) -> tuple:
     rate = room.hourly_rate_ore
     return (
-        room.name, room.city, room.venue, room.kind, room.description, _IMAGE_KEYS[room.kind],
+        room.name, room.city, room.venue, room.kind, room.description,
         room.capacity, room.equipment, rate, max(1, rate * 7 // 10), rate * 3 // 2,
     )
 
@@ -110,7 +104,7 @@ def create_host_room(body: HostRoomInput, host: HostAccount) -> dict:
                 id, owner_id, published, name, city, venue_name, kind, description, image_key,
                 capacity, equipment, hourly_rate_ore, minimum_hourly_rate_ore, maximum_hourly_rate_ore
             )
-            VALUES (%s, %s, false, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, false, %s, %s, %s, %s, %s, 'none', %s, %s, %s, %s, %s)
             RETURNING {_COLUMNS}
             """,
             (room_id, host.id, *_details(body)),
@@ -130,7 +124,7 @@ def update_host_room(room_id: str, body: HostRoomPatch, host: HostAccount) -> di
             connection.execute(
                 """
                 UPDATE marketplace_rooms
-                SET name = %s, city = %s, venue_name = %s, kind = %s, description = %s, image_key = %s,
+                SET name = %s, city = %s, venue_name = %s, kind = %s, description = %s,
                     capacity = %s, equipment = %s, hourly_rate_ore = %s,
                     minimum_hourly_rate_ore = %s, maximum_hourly_rate_ore = %s
                 WHERE id = %s AND owner_id = %s

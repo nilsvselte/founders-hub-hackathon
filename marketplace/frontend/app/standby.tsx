@@ -1,11 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useAccount } from "./account";
-import { ApiError, api, money } from "./market";
+import { ApiError, api, money, photo } from "./market";
 import type { Room } from "./market";
 
 type Offer = {
@@ -236,6 +237,7 @@ function BookingFlow({ room, requestId }: StandbyProps) {
   }
 
   const offer = request?.offer;
+  const offerPhoto = photo(offer?.room_photo);
   if (requestId && !request) {
     if (restoring) return <p className="status-note" role="status">Loading your booking…</p>;
     return (
@@ -331,9 +333,14 @@ function BookingFlow({ room, requestId }: StandbyProps) {
           )}
           {offer && (status === "offered" || status === "confirmed") && (
             <div className="offer">
-              {offer.room_photo && (
-                <img className="offer-photo" src={`/rooms/${encodeURIComponent(offer.room_photo)}`} alt="" />
-              )}
+              <div className="offer-photo room-photo-frame">
+                {offerPhoto ? (
+                  <Image src={offerPhoto.src} alt="" width={800} height={450} sizes="(max-width: 680px) 100vw, 500px" />
+                ) : (
+                  <span className="room-photo-placeholder">Photo unavailable</span>
+                )}
+                {offerPhoto?.isVenuePhoto && <span className="room-photo-label">Venue photo</span>}
+              </div>
               <div className="offer-top">
                 <div>
                   <p className="offer-label">{status === "confirmed" ? "Booked room" : "Room available"}</p>
