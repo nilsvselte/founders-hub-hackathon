@@ -14,9 +14,10 @@ function marketplaceOrigin(value) {
 
 const marketOrigin = marketplaceOrigin(document.currentScript?.dataset.marketplaceOrigin);
 if (marketOrigin) {
-  document.querySelectorAll('[data-marketplace]').forEach(link => {
-    const { pathname, search, hash } = new URL(link.href);
-    link.href = new URL(pathname + search + hash, marketOrigin).href;
+  document.querySelectorAll('[data-marketplace]').forEach(element => {
+    const property = element.localName === 'form' ? 'action' : 'href';
+    const { pathname, search, hash } = new URL(element[property]);
+    element[property] = new URL(pathname + search + hash, marketOrigin).href;
   });
 }
 

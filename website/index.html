@@ -39,16 +39,22 @@
       <p class="where">Live at Digs, Trondheim</p>
       <h1>Tell it what you need.<br><em>It finds the room.</em></h1>
       <p class="lead">Tell us when, how many people and what equipment you need. Set a maximum price and standbyroom automatically books a matching room when one opens.</p>
-      <div class="cta-row">
-        <a class="btn btn-primary" href="http://127.0.0.1:3001/standby" data-marketplace>Make a standby request</a>
-        <a class="btn btn-ghost" href="http://127.0.0.1:3001/" data-marketplace>Browse rooms</a>
-      </div>
+      <form class="standby-launch" action="http://127.0.0.1:3001/standby" method="get" aria-label="Start a standby request" aria-describedby="standby-launch-note" data-marketplace>
+        <label>Meeting date <input type="date" name="date"></label>
+        <label>People <input type="number" name="guests" min="1" max="100" value="4"></label>
+        <button class="btn btn-primary" type="submit">Book when available <span aria-hidden="true">→</span></button>
+      </form>
+      <p class="standby-launch-note" id="standby-launch-note">Review your time window and budget before sending the request.</p>
+      <nav class="standby-paths" aria-label="More ways to find a room">
+        <a class="link" href="http://127.0.0.1:3001/agent" data-marketplace>Set up calendar assistant</a>
+        <a class="link" href="http://127.0.0.1:3001/" data-marketplace>Browse rooms</a>
+      </nav>
     </div>
 
     <div class="container">
       <div class="board" aria-label="Interactive demo: the agent matching and booking a room">
         <div class="board-col">
-          <div class="board-head"><h2 class="board-title">Your preferences</h2><span class="demo-tag">Demo</span></div>
+          <div class="board-head"><h2 class="board-title">Your preferences</h2><span class="demo-tag">Interactive demo</span></div>
           <button class="prefs-sum" id="prefs-sum" type="button" aria-expanded="false" aria-controls="prefs"><span class="prefs-sum-text" id="prefs-sum-text">4 people · 45 min · screen + whiteboard · ≤300 kr</span><span class="prefs-sum-edit">Edit</span></button>
           <form class="prefs" id="prefs" aria-label="Your preferences: change any to re-rank">
             <div class="pf pf-when"><span class="pf-label">When, today</span>
@@ -160,7 +166,7 @@
 <footer class="footer">
   <div class="container footer-inner">
     <p class="footer-name" data-product>standbyroom</p>
-    <p class="footer-note">Built at the DNB × Founders Hub hackathon, Trondheim, November 2026. All rooms, times and prices on this page are demo data.</p>
+    <p class="footer-note">Built at the DNB × Founders Hub hackathon, Trondheim, November 2026. The interactive board uses sample rooms, times and prices.</p>
   </div>
 </footer>
 

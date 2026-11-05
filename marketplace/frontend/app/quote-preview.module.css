@@ -22,11 +22,11 @@
 .presets button {
   min-height: 2.45rem;
   padding: .35rem .75rem;
-  border: 1px solid var(--line);
-  border-radius: 2rem;
-  background: var(--paper);
+  border: 1px solid var(--control-line);
+  border-radius: var(--r-pill);
+  background: var(--ghost);
   font-size: .78rem;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .presets button:hover {
@@ -34,9 +34,9 @@
 }
 
 .presets button[aria-pressed="true"] {
-  border-color: var(--accent-dark);
-  background: var(--peach);
-  color: var(--accent-dark);
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--accent);
 }
 
 .fields {
@@ -51,7 +51,7 @@
   min-width: 0;
   color: var(--muted);
   font-size: .77rem;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .fields input, .fields select {
@@ -59,8 +59,8 @@
   min-width: 0;
   min-height: 2.65rem;
   padding: .4rem .55rem;
-  border: 1px solid var(--line);
-  border-radius: .4rem;
+  border: 1px solid var(--control-line);
+  border-radius: var(--r-control);
   background: var(--paper);
   color: var(--ink);
   font-size: .9rem;
@@ -71,17 +71,17 @@
   margin-top: 1rem;
   padding: .75rem .95rem;
   border-inline-start: 2px solid var(--accent);
-  background: var(--soft);
+  background: var(--paper);
   color: var(--muted);
   font-size: .88rem;
 }
 
 .total strong {
   margin-inline-end: .2rem;
-  color: var(--ink);
+  color: var(--accent);
   font-family: var(--serif);
   font-size: 1.75rem;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 1.2;
 }
 
@@ -99,7 +99,7 @@
   border: 0;
   background: none;
   color: inherit;
-  font-weight: 650;
+  font-weight: 600;
   text-decoration: underline;
 }
 

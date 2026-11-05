@@ -1,5 +1,21 @@
 /* Bookers page (index.html): why-section, step numbers, phone board. Loads after board.css. */
 
+.standby-launch {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 6rem) auto;
+  align-items: end; gap: 12px; max-width: 35rem; margin: 32px auto 0;
+  padding: 14px; border: 1px solid var(--border); border-radius: var(--r-md);
+  background: var(--surface-glass); text-align: left;
+}
+.standby-launch label { display: grid; gap: 5px; min-width: 0; color: var(--muted); font-size: 13px; }
+.standby-launch input {
+  width: 100%; min-width: 0; min-height: 46px; padding: 8px 11px;
+  background: var(--ground); color: var(--ink); font: 500 16px var(--text);
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+}
+.standby-launch .btn { min-height: 46px; }
+.standby-launch-note { margin: 10px auto 0; color: var(--muted); font-size: 13px; }
+.standby-paths { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 24px; margin-top: 19px; font-size: 14px; }
+
 /* How: step numbers */
 .step-n { display: inline-block; width: 1.4em; font-variant-numeric: tabular-nums; color: var(--accent); opacity: 0.5; }
 .step.is-on .step-n { opacity: 1; }
@@ -42,4 +58,8 @@
 
   .board .matches .m { padding: 10px 12px 12px; gap: 10px; }
   .board .hint { font-size: 13px; }
+}
+@media (max-width: 480px) {
+  .standby-launch { grid-template-columns: minmax(0, 1fr) minmax(0, 6rem); }
+  .standby-launch .btn { grid-column: 1 / -1; }
 }
