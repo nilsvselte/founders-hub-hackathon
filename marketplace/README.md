@@ -79,6 +79,8 @@ Mesh’s Digs listings use Mesh Community’s room photography for Driv and its 
 
 Research for 26 additional Trondheim and Stjørdal venues is stored as unpublished listings. The customer roster should confirm a venue before its rooms are published. Unpublishing these research listings preserves existing booking history. [Catalog research](backend/app/migrations/011_trondheim_venue_catalog.sql) · [Draft migration](backend/app/migrations/012_keep_unconfirmed_venue_leads_unpublished.sql)
 
+Each of these venues has its own photo, labelled as a venue photo because the room names are generic. It shows a meeting room where the venue publishes one, and otherwise the hotel or building. The photos come from each venue's or hotel chain's own website. [Photo sources](backend/app/migrations/013_trondheim_venue_photos.sql)
+
 ## Run backend checks
 
 From `marketplace/backend/`, run `uv run --locked python -m unittest discover -s tests -v`. Set `MARKETPLACE_TEST_DATABASE_URL` to a disposable PostgreSQL database to include the concurrent booking checks.

@@ -46,7 +46,16 @@ export function money(ore: number) {
 }
 
 const roomPhotos = new Set(["digs-driv", "brighten-meeting-room", "kowork-meeting-room"]);
-const venuePhotos = new Set(["digs-gnist-spark", "kowork-venue", "brighten-venue"]);
+const venuePhotos = new Set([
+  "digs-gnist-spark", "kowork-venue", "brighten-venue",
+  "workwork-venue", "bargaflyt-venue", "olo-venue", "spaces-powerhouse-venue",
+  "clarion-trondheim-venue", "radisson-royal-garden-venue", "radisson-airport-venue", "britannia-venue",
+  "comfort-park-venue", "comfort-trondheim-venue", "quality-panorama-venue", "quality-prinsen-venue",
+  "quality-augustin-venue", "home-grand-olav-venue", "scandic-bakklandet-venue", "scandic-lerkendal-venue",
+  "scandic-nidelven-venue", "scandic-solsiden-venue", "scandic-hell-venue", "thon-nidaros-venue",
+  "lager11-venue", "olavshallen-venue", "rockheim-venue", "salemhuset-venue",
+  "trondheim-spektrum-venue", "banksalen-venue",
+]);
 
 export function photo(imageKey: string | null | undefined) {
   const key = imageKey?.replace(/\.webp$/, "");
