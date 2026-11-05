@@ -1,0 +1,17 @@
+/* Hero: Trondheim office blocks at dusk (lit windows). From bg-lab/windows. */
+.hero { background: var(--ground-deep); isolation: isolate; }
+.hero-art { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.hero-copy { z-index: 1; }
+.hero .board { margin-top: clamp(140px, 18vw, 260px); }
+@media (max-width: 720px) { .hero .board { margin-top: 140px; } }
+:root { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.hero-art { background: linear-gradient(180deg, #080B14 0%, #0F1830 45%, #1B2440 62%, #2A2A40 70%, #0A0E18 100%); }
+.hw-city { position: absolute; left: 0; right: 0; bottom: 0; top: 520px; }
+.hw-city svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hw-b { fill: #0B1020; }
+.hw-w { fill: #141B2E; }
+.hw-w.on { fill: rgba(244,225,180,.55); }
+.hw-w.dim { fill: rgba(244,225,180,.22); }
+.hw-w.free { fill: #E9B638; filter: drop-shadow(0 0 6px rgba(233,182,56,.8)); transition: fill 600ms; }
+/* Fade the skyline into the section below instead of a hard edge. */
+.hero-art::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 180px; background: linear-gradient(180deg, rgba(15,20,32,0) 0%, var(--ground) 100%); pointer-events: none; }
