@@ -14,6 +14,11 @@ const brandGlyphs: Record<string, string> = {
   brighten: "M8.5 7.5v10h4.5a2.6 2.6 0 0 0 0-5.2H8.5m0 0h4a2.4 2.4 0 0 0 0-4.8h-4",
 };
 
+// Venue photos shown in the hero. Venues without one get the drawn room plan.
+const heroPhotos: Record<string, { src: string; alt: string }> = {
+  brighten: { src: "/venues/brighten.webp", alt: "Brighten's glass-walled meeting room on Bakklandet" },
+};
+
 const apiUrl = (process.env.MARKETPLACE_API_URL ?? "http://127.0.0.1:8000").replace(/\/+$/, "");
 
 async function loadVenue(): Promise<Venue> {
@@ -84,7 +89,12 @@ export default async function Home() {
             <h1 id="page-title">Meeting space,<br />at short notice.</h1>
             <p className="hero-copy">Tell us what your team needs. When a room opens up at {venue.name}, we’ll look for a match and show you the price before you book.</p>
           </div>
-          <RoomPlan />
+          {heroPhotos[venue.id] ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="hero-photo" src={heroPhotos[venue.id].src} alt={heroPhotos[venue.id].alt} width={1200} height={900} />
+          ) : (
+            <RoomPlan />
+          )}
         </section>
         <Standby venueName={venue.name} />
       </main>
