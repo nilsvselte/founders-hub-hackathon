@@ -1,34 +1,36 @@
-# standbyroom in 90 seconds
+# standbyroom live demo
 
-Before presenting, sign in with a renter account and open [Driv at Mesh’s Digs venue](http://127.0.0.1:3000/rooms/digs-demo-1). Keep [Kowork’s shared meeting room](http://127.0.0.1:3000/rooms/kowork-meeting-room) as a second example. Use a fresh test session with a room that has no current opening if you want to show the waiting state.
+A renter asks for a room. A host releases unused time. Claude finds a match, and standbyroom confirms the booking within the renter’s approved limits.
 
-| Time | On screen |
+## Before the audience arrives
+
+1. Start the marketplace API on `8001` and the frontend on `3001`, with `MARKETPLACE_API_URL=http://127.0.0.1:8001`. Serve the landing page from the repo root with `python3 -m http.server 8088 --bind 127.0.0.1 --directory website`. Open the [landing page](http://127.0.0.1:8088/) and [host dashboard](http://127.0.0.1:3001/host) in separate sessions, and check [API readiness](http://127.0.0.1:3001/api/ready). [Marketplace setup](README.md)
+2. In a test database, publish a fresh host-owned room with a screen and capacity for four. Keep the demo window clear of existing openings. Sign in as the host and as two separate test renters. Configure the live matcher and confirm a rehearsal booking shows **Matched by Claude**. Use fresh inventory for the stage run. [Live matcher setup](README.md#try-the-booking-demo)
+3. Pick an exact 30-minute slot starting about 10 minutes into the future. Choose a total budget above the rehearsed price. A one-hour release covers this window and the default two-minute turnaround.
+
+For a Digs fixture, enable `MARKETPLACE_DEMO_MODE=1` on a disposable Compose stack. Set `DEMO_HOST_PASSWORD` locally to at least 12 characters for a new account. Run this from `marketplace/` to give the test host ownership of the unowned Digs rooms, including Driv (`digs-demo-1`).
+
+```sh
+docker compose exec -e DEMO_HOST_PASSWORD="$DEMO_HOST_PASSWORD" api .venv/bin/python -m app.demo_host host@example.test
+```
+
+Compose serves the marketplace on `3000`. For Compose or a hosted HTTPS preview, set `data-marketplace-origin` on the landing page’s `main.js` script tag to the matching marketplace origin. To show the installable phone app separately, open that HTTPS preview on the phone. [Phone app setup](../docs/phone-app.md)
+
+## On stage
+
+| Show | Say and do |
 | --- | --- |
-| 0–25 s | Show Driv’s listing. In **Price estimate**, select **30 min** and compare **Weekday morning**, **Weekday evening**, and **Weekend**. The demo catalog’s NOK 450 hourly rate gave NOK 270, NOK 191.25, and NOK 180 respectively when checked for starts more than 30 minutes away. Read the current estimate aloud if rates change. |
-| 25–45 s | Under **Request this room**, use the default two-hour window, 30 minutes, four people, and the default budget. Select **Book when available** and show **Waiting for an opening**. The request authorizes a booking within those limits. |
-| 45–90 s | Press **Release room** on the device during a scheduled block, or select **Release demo room** to simulate it. Watch standbyroom match and confirm the booking. Show the reference, final price, and **Add to Google Calendar**. If the room was already available, repeat with a room that has no active opening. |
+| **Landing page → standby request** | Choose the meeting date and four people on the static landing page. Continue to the marketplace. Enter the rehearsed earliest start and latest end, 30 minutes, a screen, and a maximum total price. Point to the booking authorization and select **Book when available**. |
+| **Waiting for an opening** | Show the renter waiting. In the host dashboard, find the test listing, choose **1 hour** under **Available from now**, and select **Release time**. |
+| **Booking confirmed** | Return to the renter tab. Show **Matched by Claude**, the room, exact time, final price, and booking reference. The booking is confirmed for the slot after the turnaround buffer. |
+| **Slot taken and Calendar draft** | In the second renter session, request the same room for the exact confirmed interval. Check that it stays on standby without an offer. On the first booking, open **Add to Google Calendar** to show the prefilled event draft. |
 
-## Host view: live room status
+## Optional host and device view
 
-The host dashboard at [/host](http://127.0.0.1:3000/host) shows each room as **Booked until HH:MM**, **Blocked until HH:MM** or **Free now**, and the sensor as **Occupied** or **Empty since HH:MM**, or **No sensor**. A room that is booked but has been empty for 10 minutes gets a **Booked but empty** warning. The page refreshes every 12 seconds.
+The host dashboard refreshes about every 12 seconds. It shows **Booked until**, **Blocked until**, or **Free now** alongside **Occupied since**, **Empty since**, or **No sensor**. A current booking or block with a reported empty room gets a warning after 10 minutes. Occupancy reports update the badge. A teammate can demonstrate a connected board’s **Release room** button during an active host block. Use **Release time** for the main demo so the booking does not depend on the board or WiFi. [Device setup](../device/README.md)
 
-To give a demo host the Mesh/Digs rooms (Driv, Gnist), start the stack with `MARKETPLACE_DEMO_MODE=1` and run this once from `marketplace/`. Pick any test email and a password of 12+ characters; keep both out of the repo.
+## Rehearsal checklist
 
-```sh
-docker compose exec -e DEMO_HOST_PASSWORD='<password>' api .venv/bin/python -m app.demo_host <host email>
-```
-
-It creates the host account if needed and assigns every unowned Digs room to it; running it again is harmless. Sign in at `/sign-in` with that email, in a separate browser session from the renter. Owned rooms no longer receive catalog migrations that only touch unowned rooms.
-
-To see a sensor change without the board, post an event with the device token from `marketplace/.env`:
-
-```sh
-curl -X POST http://127.0.0.1:8000/internal/device/events -H "Authorization: Bearer $MARKETPLACE_DEVICE_TOKEN" -H 'Content-Type: application/json' \
-  -d "{\"type\":\"room.occupancy_changed\",\"event_id\":\"$(uuidgen)\",\"external_room_id\":\"digs-demo-1\",\"occupied\":false,\"changed_at\":\"$(date -u +%FT%TZ)\"}"
-```
-
-Hosts can also create and publish their own listing, then select **Release time**. A renter can request that published listing from a separate browser session.
-
-Docker Compose serves the app on port **3000**. Start the test backend with `MARKETPLACE_DEMO_MODE=1`, leave `ANTHROPIC_API_KEY` unset, and verify `/api/ready` and `/api/demo/config` on the frontend origin. The keyless matcher labels the result **Demo match**. Use a demo-enabled API and test database for Vercel previews. [Local setup](README.md) · [Preview deployment](DEPLOYMENT.md)
-
-To show the separate calendar flow, use a test calendar with an upcoming in-person meeting that needs a room. Open **Calendar assistant**, follow the [local MCP setup](agent/README.md), and ask Claude for room suggestions. Approve the displayed room, time, and price to book it. This approval step is specific to the assistant flow.
+- Use a fresh listing or a fresh meeting window per run. Record the transition from waiting to confirmed and compare the final price with the renter’s maximum total.
+- Verify the competing request receives no offer and the Calendar link carries the confirmed room, time, and reference. Keep the Calendar draft unsaved.
+- For a keyless rehearsal, set `MARKETPLACE_DEMO_MODE=1` and leave `ANTHROPIC_API_KEY` unset. Expect **Demo match** and describe it as the deterministic demo. Keep simulated board events separate from physical hardware results.
