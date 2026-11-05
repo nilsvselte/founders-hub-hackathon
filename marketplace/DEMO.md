@@ -31,6 +31,8 @@ Compose serves the marketplace on `3000`. For Compose or a hosted HTTPS preview,
 
 The host dashboard refreshes about every 12 seconds. It shows **Booked until**, **Blocked until**, or **Free now** alongside **Occupied since**, **Empty since**, or **No sensor**. A current booking or block with a reported empty room gets a warning after 10 minutes. Occupancy reports update the badge. A teammate can demonstrate a connected board’s **Release room** button during an active host block. Use **Release time** for the main demo so the booking does not depend on the board or WiFi. [Device setup](../device/README.md)
 
+**Live room view (no sign-in).** Open `/live/digs-demo-1` on the marketplace (local: http://127.0.0.1:3001/live/digs-demo-1) on the projector or a phone. It polls `GET /public/rooms/digs-demo-1/live` every 2 s and shows **Someone’s in the room**, **Empty** or **No sensor** with the last sensor reading time, **Booked**/**Blocked**/**Free now** with the current time span, and the booked-but-empty warning. Only venue demo rooms are public; no booking references or names are returned. The sensor feeds it through `POST /internal/device/events` (bearer `MARKETPLACE_DEVICE_TOKEN`) with `{"type":"room.occupancy_changed","event_id":"<unique>","external_room_id":"digs-demo-1","occupied":true,"changed_at":"<ISO time with offset>"}`. Every event needs a new `event_id` and a `changed_at` later than the last one.
+
 ## Rehearsal checklist
 
 - Use a fresh listing or a fresh meeting window per run. Record the transition from waiting to confirmed and compare the final price with the renter’s maximum total.

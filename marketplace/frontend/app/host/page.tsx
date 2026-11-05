@@ -7,9 +7,11 @@ import { useAccount } from "../account";
 import { api, money, photo } from "../market";
 import type { Room } from "../market";
 import { osloInstant } from "../oslo-time";
+import { LiveRoomLink } from "../demo-room";
+import { ghostMinutes } from "../room-status";
+import type { Span } from "../room-status";
 import styles from "./host.module.css";
 
-type Span = { start_at: string; end_at: string };
 type Listing = Room & {
   published: boolean;
   last_occupancy?: { occupied: boolean; changed_at: string } | null;
@@ -20,7 +22,6 @@ type Release = { created: boolean; opening_id?: string | null; reason?: string |
 const kinds = ["Studio", "Workshop", "Meeting room", "Boardroom"];
 
 const REFRESH_MS = 12_000;
-const GHOST_AFTER_MS = 10 * 60_000;
 const osloClock = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 const osloDay = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Oslo", day: "numeric", month: "short" });
 
@@ -33,11 +34,7 @@ function clock(value: string, now: number) {
 function RoomStatus({ room, now }: { room: Listing; now: number }) {
   const booking = room.current_booking ?? room.active_block ?? null;
   const sensor = room.last_occupancy;
-  // Empty since the later of the sensor change and the booking start.
-  const emptySince = booking && sensor && !sensor.occupied
-    ? Math.max(Date.parse(sensor.changed_at), Date.parse(booking.start_at)) : null;
-  const ghostMinutes = emptySince !== null && now - emptySince >= GHOST_AFTER_MS
-    ? Math.floor((now - emptySince) / 60_000) : null;
+  const ghost = ghostMinutes(booking, sensor, now);
   return (
     <div className={styles.status} aria-live="polite">
       <span className={booking ? styles.booked : styles.free}>
@@ -49,7 +46,7 @@ function RoomStatus({ room, now }: { room: Listing; now: number }) {
           ? <>{sensor.occupied ? "Occupied" : "Empty"} since <time dateTime={sensor.changed_at}>{clock(sensor.changed_at, now)}</time></>
           : "No sensor"}
       </span>
-      {ghostMinutes !== null && <strong className={styles.ghost} role="status">⚠ {room.current_booking ? "Booked" : "Blocked"} but empty for {ghostMinutes} min</strong>}
+      {ghost !== null && <strong className={styles.ghost} role="status">⚠ {room.current_booking ? "Booked" : "Blocked"} but empty for {ghost} min</strong>}
     </div>
   );
 }
@@ -255,6 +252,7 @@ function HostDashboard() {
           <p className={styles.kicker}>Host workspace</p>
           <h1>Your rooms</h1>
           <p>Manage listings and release time when a room becomes available.</p>
+          <LiveRoomLink />
         </div>
         <button type="button" className={styles.primary} disabled={!!busy || loadingListings || !!loadError} onClick={() => openEditor("new")}>＋ Add a room</button>
       </header>
