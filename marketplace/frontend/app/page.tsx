@@ -7,6 +7,13 @@ export const dynamic = "force-dynamic";
 type Venue = { id: string; operator: string; name: string; location: string };
 
 const fallbackVenue: Venue = { id: "digs", operator: "Mesh", name: "Digs", location: "Digs, Trondheim" };
+// Monogram strokes for the brand mark, drawn on a 25 × 25 grid.
+const brandGlyphs: Record<string, string> = {
+  digs: "M7 17V8l5.5 6L18 8v9",
+  kowork: "M8.5 7.5v10m8-10-6 5.5m1.5-1.5 4.5 6",
+  brighten: "M8.5 7.5v10h4.5a2.6 2.6 0 0 0 0-5.2H8.5m0 0h4a2.4 2.4 0 0 0 0-4.8h-4",
+};
+
 const apiUrl = (process.env.MARKETPLACE_API_URL ?? "http://127.0.0.1:8000").replace(/\/+$/, "");
 
 async function loadVenue(): Promise<Venue> {
@@ -57,11 +64,7 @@ export default async function Home() {
           <div className="brand">
             <svg width="25" height="25" viewBox="0 0 25 25" fill="none" aria-hidden="true">
               <rect x="1" y="1" width="23" height="23" rx="5" fill="currentColor" />
-              {venue.operator.startsWith("M") ? (
-                <path d="M7 17V8l5.5 6L18 8v9" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              ) : (
-                <path d="M8.5 7.5v10m8-10-6 5.5m1.5-1.5 4.5 6" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              )}
+              <path d={brandGlyphs[venue.id] ?? brandGlyphs.digs} stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <span>{venue.operator} <span className="brand-secondary">/ Meeting rooms</span></span>
           </div>
