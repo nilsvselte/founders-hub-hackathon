@@ -8,6 +8,7 @@ const files = new Set([
   "index.html", "utleie.html", "ledig-moterom.html", "board-data.js",
   "board.css", "board.js", "bookers.css", "hero-art.js", "hero.css",
   "main.js", "renters.css", "renters.js", "spaces.css", "spaces.js", "styles.css",
+  "apple-touch-icon.png", "icon-192.png", "icon-512.png", "icon.svg", "manifest.webmanifest",
 ]);
 
 function sameOriginPage(contents) {
@@ -29,7 +30,7 @@ const input = hasSource ? source : target;
 const assets = await Promise.all([...files].map(async (file) => {
   const path = new URL(file, input);
   if (!(await lstat(path)).isFile()) throw new Error(`Welcome asset must be a regular file: ${file}`);
-  const contents = await readFile(path, "utf8");
+  const contents = file.endsWith(".png") ? await readFile(path) : await readFile(path, "utf8");
   return [file, file.endsWith(".html") ? sameOriginPage(contents) : contents];
 }));
 
