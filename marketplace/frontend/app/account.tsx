@@ -74,26 +74,9 @@ export function useAccount() {
 }
 
 export function MarketHeader() {
-  const { account, setAccount } = useAccount();
-  const router = useRouter();
+  const { account } = useAccount();
   const pathname = usePathname();
-  const [signingOut, setSigningOut] = useState(false);
-  const [error, setError] = useState("");
-  const primaryPath = account?.role === "host" ? "/host" : "/bookings";
-
-  async function signOut() {
-    setError("");
-    setSigningOut(true);
-    try {
-      await api("auth/logout", { method: "POST" });
-      setAccount(null);
-      router.replace("/");
-    } catch {
-      setError("Couldn’t sign out. Please try again.");
-    } finally {
-      setSigningOut(false);
-    }
-  }
+  const [error] = useState("");
 
   return (
     <header className="market-header">
@@ -111,30 +94,15 @@ export function MarketHeader() {
           <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>Find a room</Link>
           <Link href="/ntnu" aria-current={pathname.startsWith("/ntnu") ? "page" : undefined}>NTNU rooms</Link>
           <Link href="/host" aria-current={pathname.startsWith("/host") ? "page" : undefined}>For hosts</Link>
-          {account?.role === "renter" && (
-            <Link href="/bookings" aria-current={pathname.startsWith("/bookings") ? "page" : undefined}>My bookings</Link>
-          )}
+          <Link href="/bookings" aria-current={pathname.startsWith("/bookings") ? "page" : undefined}>My bookings</Link>
         </nav>
         <div className="market-session">
           <Link className="market-live" href="/live/digs-demo-1" aria-current={pathname.startsWith("/live") ? "page" : undefined}>
             <span className="demo-room-dot" aria-hidden="true" />Live room demo
           </Link>
-          {account ? (
-            <>
-              {account.role === "renter" ? (
-                <Link className="market-user" href="/account/preferences" title="Your preferences" aria-current={pathname.startsWith("/account") ? "page" : undefined}>
-                  {accountIcon}{account.name.trim().split(/\s+/)[0]}
-                </Link>
-              ) : (
-                <Link className="market-user" href="/account/notifications" title="Notifications" aria-current={pathname.startsWith("/account") ? "page" : undefined}>
-                  {accountIcon}{account.name.trim().split(/\s+/)[0]}
-                </Link>
-              )}
-              <button className="market-signout" type="button" onClick={() => void signOut()} disabled={signingOut}>
-                {signingOut ? "Signing out…" : "Sign out"}
-              </button>
-            </>
-          ) : null}
+          <Link className="market-user" href={account?.role === "host" ? "/account/notifications" : "/account/preferences"} title="Your account" aria-current={pathname.startsWith("/account") ? "page" : undefined}>
+            {accountIcon}{account ? account.name.trim().split(/\s+/)[0] : "Demo"}
+          </Link>
           {error && <span className="identity-error" role="alert">{error}</span>}
         </div>
       </div>
