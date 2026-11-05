@@ -9,7 +9,7 @@ import QuotePreview from "../../quote-preview";
 import Standby from "../../standby";
 import { factsForVenue } from "../../venue-facts";
 
-export default function RoomDetail({ roomId }: { roomId: string }) {
+export default function RoomDetail({ roomId, searchDate, guests }: { roomId: string; searchDate?: string; guests?: number }) {
   const [room, setRoom] = useState<Room | null>(null);
   const [failed, setFailed] = useState(false);
   const roomPhoto = photo(room?.image_key);
@@ -75,10 +75,10 @@ export default function RoomDetail({ roomId }: { roomId: string }) {
                   <Link href={`/venues#${venue.id}`}>More about {venue.name} <span aria-hidden="true">→</span></Link>
                 </div>
               )}
-              <QuotePreview room={room} />
+              <QuotePreview room={room} searchDate={searchDate} />
             </section>
             <aside className="room-reservation">
-              <Standby room={room} />
+              <Standby room={room} searchDate={searchDate} guests={guests} />
             </aside>
           </div>
         </>

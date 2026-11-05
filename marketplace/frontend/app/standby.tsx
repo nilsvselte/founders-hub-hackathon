@@ -8,6 +8,7 @@ import type { FormEvent } from "react";
 import { useAccount } from "./account";
 import { ApiError, api, money, photo } from "./market";
 import type { Room } from "./market";
+import { upcomingRoomStart } from "./oslo-time";
 
 type Offer = {
   id: string;
@@ -59,11 +60,20 @@ function describeWindow(start: string, end: string) {
 
 const requestPath = (id: string) => `standby-requests/${encodeURIComponent(id)}`;
 
-type StandbyProps = { room: Room; requestId?: never } | { requestId: string; room?: never };
+type StandbyProps = {
+  room: Room; requestId?: never; searchDate?: string; guests?: number;
+} | {
+  requestId: string; room?: never; searchDate?: never; guests?: never;
+};
 
 export default function Standby(props: StandbyProps) {
   const { account, loading } = useAccount();
-  const returnTo = props.room ? `/rooms/${encodeURIComponent(props.room.id)}` : `/bookings/${encodeURIComponent(props.requestId)}`;
+  const query = new URLSearchParams();
+  if (props.searchDate) query.set("date", props.searchDate);
+  if (props.guests) query.set("guests", String(props.guests));
+  const returnTo = props.room
+    ? `/rooms/${encodeURIComponent(props.room.id)}${query.size ? `?${query}` : ""}`
+    : `/bookings/${encodeURIComponent(props.requestId)}`;
 
   if (loading) return <p className="status-note" role="status">Checking your account…</p>;
   if (!account) {
@@ -88,7 +98,7 @@ export default function Standby(props: StandbyProps) {
   return <BookingFlow key={`${account.id}:${returnTo}`} {...props} />;
 }
 
-function BookingFlow({ room, requestId }: StandbyProps) {
+function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
   const router = useRouter();
   const [request, setRequest] = useState<StandbyRequest | null>(null);
   const [busy, setBusy] = useState<Action | null>(null);
@@ -104,11 +114,11 @@ function BookingFlow({ room, requestId }: StandbyProps) {
   const status = request?.status;
 
   useEffect(() => {
-    const now = Date.now();
-    setEarliest(localInputValue(new Date(now)));
-    setLatest(localInputValue(new Date(now + 120 * 60_000)));
+    const start = upcomingRoomStart(searchDate)?.getTime() ?? Date.now();
+    setEarliest(localInputValue(new Date(start)));
+    setLatest(localInputValue(new Date(start + 120 * 60_000)));
     setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone.replaceAll("_", " "));
-  }, []);
+  }, [searchDate]);
 
   useEffect(() => {
     if (!requestId) return;
@@ -289,7 +299,7 @@ function BookingFlow({ room, requestId }: StandbyProps) {
               </label>
               <label>
                 People
-                <input type="number" name="party" defaultValue={Math.min(4, room?.capacity ?? 4)} min="1" max={room?.capacity ?? 50} required />
+                <input type="number" name="party" defaultValue={Math.min(guests ?? 4, room?.capacity ?? 4)} min="1" max={room?.capacity ?? 50} required />
               </label>
               <label>
                 Max total price <span className="unit">NOK</span>

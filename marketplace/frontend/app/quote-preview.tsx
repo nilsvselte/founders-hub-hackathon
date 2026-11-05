@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { api, money } from "./market";
 import type { Room } from "./market";
+import { dayMs, osloDateTime, osloInstant, upcomingRoomStart } from "./oslo-time";
 import styles from "./quote-preview.module.css";
 
 type Quote = {
@@ -21,38 +22,6 @@ type Preset = (typeof presets)[number];
 type Selection = { date: string; time: string; preset?: Preset["id"] };
 type QuoteResult = { key: string; quote: Quote } | { key: string; error: string };
 
-const osloClock = new Intl.DateTimeFormat("en-GB", {
-  timeZone: "Europe/Oslo",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
-const dayMs = 86_400_000;
-
-function osloDateTime(instant: number) {
-  const parts = Object.fromEntries(osloClock.formatToParts(instant).map(({ type, value }) => [type, value]));
-  return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${parts.hour}:${parts.minute}` };
-}
-
-function osloInstant({ date, time }: Selection) {
-  if (!date || !time) return null;
-  const wall = Date.parse(`${date}T${time}:00Z`);
-  if (!Number.isFinite(wall)) return null;
-
-  // Check both possible offsets around a clock change. An ambiguous time uses its first occurrence.
-  for (const sample of [wall - dayMs, wall + dayMs]) {
-    const local = osloDateTime(sample);
-    const offset = Date.parse(`${local.date}T${local.time}:00Z`) - sample;
-    const instant = wall - offset;
-    const roundTrip = osloDateTime(instant);
-    if (roundTrip.date === date && roundTrip.time === time) return new Date(instant);
-  }
-  return null;
-}
-
 function nextPreset(preset: Preset): Selection {
   const now = Date.now();
   const today = Date.parse(`${osloDateTime(now).date}T00:00:00Z`);
@@ -67,7 +36,7 @@ function nextPreset(preset: Preset): Selection {
   return { date: "", time: "" };
 }
 
-export default function QuotePreview({ room }: { room: Room }) {
+export default function QuotePreview({ room, searchDate }: { room: Room; searchDate?: string }) {
   const headingId = useId();
   const [selection, setSelection] = useState<Selection>({ date: "", time: "" });
   const [duration, setDuration] = useState(60);
@@ -80,8 +49,9 @@ export default function QuotePreview({ room }: { room: Room }) {
   const visibleResult = requestKey && result?.key === requestKey ? result : null;
 
   useEffect(() => {
-    setSelection(nextPreset(presets[0]));
-  }, []);
+    const start = upcomingRoomStart(searchDate);
+    setSelection(start ? osloDateTime(start.getTime()) : nextPreset(presets[0]));
+  }, [searchDate]);
 
   useEffect(() => {
     if (!requestKey) return;

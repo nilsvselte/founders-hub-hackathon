@@ -1,6 +1,6 @@
-# Roomline meeting room marketplace
+# standbyroom meeting room marketplace
 
-Roomline is a marketplace for meeting rooms across venues. Renters browse listings and request a time. Hosts manage their rooms and can release unused time. Mesh and Digs are the original pilot context.
+standbyroom is a marketplace for meeting rooms across venues. Renters browse listings and request a time. Hosts manage their rooms and can release unused time. Mesh and Digs are the original pilot context.
 
 1. When a room is ready, a staff member presses **Release room** on an Atech device. The marketplace makes the remaining time available after a turnaround buffer.
 2. A buyer leaves a standby request with their time window, duration, group size, equipment needs, budget, and any flexibility. A Claude agent checks available slots and matches the request to a room as openings come in.

@@ -18,6 +18,13 @@ type AccountContextValue = {
 
 const AccountContext = createContext<AccountContextValue | null>(null);
 
+const accountIcon = (
+  <svg className="market-account-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="12" cy="8" r="3.25" stroke="currentColor" strokeWidth="1.7" />
+    <path d="M5.5 19v-1a4.5 4.5 0 0 1 4.5-4.5h4a4.5 4.5 0 0 1 4.5 4.5v1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+  </svg>
+);
+
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [account, updateAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,13 +89,14 @@ export function MarketHeader() {
   return (
     <header className="market-header">
       <div className="market-header-inner">
-        <Link className="market-wordmark" href="/" aria-label="Roomline marketplace">
+        <Link className="market-wordmark" href="/" aria-label="standbyroom marketplace">
           <span className="market-mark" aria-hidden="true">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M4.5 19.5v-15h15v10m-15-3h9v8m0-5h6m-6 5h6" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" strokeLinecap="round" />
+              <rect x="3.75" y="5.75" width="16.5" height="15" rx="3" stroke="currentColor" strokeWidth="1.7" />
+              <path d="M8 4v3.5M16 4v3.5m-12 3h16M9 20.5v-4a3 3 0 0 1 6 0v4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
             </svg>
           </span>
-          Roomline
+          standbyroom
         </Link>
         <nav className="market-nav" aria-label="Marketplace">
           <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>Browse rooms</Link>
@@ -104,13 +112,13 @@ export function MarketHeader() {
         <div className="market-session">
           {account ? (
             <>
-              <span className="market-user" title={account.name}>{account.name.trim().split(/\s+/)[0]}</span>
+              <span className="market-user" title={account.name}>{accountIcon}{account.name.trim().split(/\s+/)[0]}</span>
               <button className="market-signout" type="button" onClick={() => void signOut()} disabled={signingOut}>
                 {signingOut ? "Signing out…" : "Sign out"}
               </button>
             </>
           ) : !loading ? (
-            <Link className="market-login" href="/sign-in">Sign in</Link>
+            <Link className="market-login" href="/sign-in">{accountIcon}Sign in</Link>
           ) : null}
           {error && <span className="identity-error" role="alert">{error}</span>}
         </div>
@@ -123,7 +131,7 @@ function safeNext(value?: string) {
   if (!value?.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u0020]/.test(value)) {
     return undefined;
   }
-  const origin = "https://roomline.invalid";
+  const origin = "https://standbyroom.invalid";
   const url = new URL(value, origin);
   if (url.origin !== origin || url.pathname.startsWith("//")) return undefined;
   return url.pathname + url.search + url.hash;
@@ -190,7 +198,7 @@ export function AccountForm({
       <section className="identity-card" aria-labelledby="identity-title">
         <p className="identity-kicker">Your account</p>
         <h1 id="identity-title">{register ? "Create an account" : "Welcome back"}</h1>
-        <p className="identity-intro">{register ? "Choose how you’ll use Roomline." : "Sign in to manage rooms and reservations."}</p>
+        <p className="identity-intro">{register ? "Choose how you’ll use standbyroom." : "Sign in to manage rooms and reservations."}</p>
         {loading ? <p role="status">Checking your account…</p> : account ? (
           <>
             <p>You’re signed in as <strong>{account.name}</strong>.</p>
@@ -222,7 +230,7 @@ export function AccountForm({
               </button>
             </form>
             <p className="identity-switch">
-              {register ? "Already have an account?" : "New to Roomline?"}{" "}
+              {register ? "Already have an account?" : "New to standbyroom?"}{" "}
               <Link href={alternate}>{register ? "Sign in" : "Create an account"}</Link>
             </p>
           </>

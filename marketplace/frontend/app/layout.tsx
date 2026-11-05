@@ -4,7 +4,7 @@ import { AccountProvider, MarketHeader } from "./account";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Roomline · Find a room",
+  title: "standbyroom · Meeting rooms",
   description: "Browse and request meeting rooms across venues.",
 };
 

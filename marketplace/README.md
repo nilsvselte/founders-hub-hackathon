@@ -1,4 +1,4 @@
-# Roomline meeting room marketplace
+# standbyroom meeting room marketplace
 
 Renters can browse venues, sign in, and request a time. Hosts use a separate dashboard to create and publish room listings and release availability. When an opening matches a request, the marketplace holds a priced offer and confirms it after the renter accepts. Next.js serves the marketplace and FastAPI on Uvicorn manages accounts and bookings in PostgreSQL.
 

@@ -39,7 +39,7 @@ function VenueSection({ venue, rooms }: { venue: VenueFacts; rooms: Room[] | nul
         </div>
       </div>
 
-      <h3 className={styles.roomsHeading}>Rooms on Roomline</h3>
+      <h3 className={styles.roomsHeading}>Rooms on standbyroom</h3>
       <div className={styles.rooms}>
         {venue.rooms.map(({ roomId, stated, inferred }) => {
           const room = byId.get(roomId);
@@ -114,7 +114,7 @@ export default function VenueDirectory() {
         <h1>Rooms that only members can book</h1>
         <p>
           Kowork and Brighten both have meeting rooms that are included in their members’ rent. Neither sells room
-          time to anyone else, and neither publishes an hourly price. Roomline lets them sell the hours their members
+          time to anyone else, and neither publishes an hourly price. standbyroom lets them sell the hours their members
           don’t use.
         </p>
         <nav className={styles.jump} aria-label="Venues">
