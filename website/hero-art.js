@@ -19,7 +19,7 @@
   city.innerHTML = s + '</svg>'; host.appendChild(city);
 
   // Put the rooftops just under the buttons at every width.
-  var hero = document.querySelector('.hero'), cta = document.querySelector('.hero .cta-row');
+  var hero = document.querySelector('.hero'), cta = document.querySelector('.hero .cta-row') || document.querySelector('.hero-copy');
   // Phones crop to the left of the skyline, where the blocks stand tall (the centre is kept low for the headline on desktop).
   var svg = city.querySelector('svg'), narrow = false;
   function place() {

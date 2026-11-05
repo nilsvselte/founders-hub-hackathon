@@ -82,3 +82,43 @@
 @media (max-width: 900px) {
   .board.owner .board-col:last-child { order: 0; }
 }
+
+/* Proof line under the hero actions */
+.proof { margin-top: 24px; font-size: 15px; color: var(--muted); }
+
+/* Text left, content right (Keep your booking system, Who walks in?) */
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 64px; align-items: start; }
+.split .lead { margin-top: 20px; }
+
+/* Keep your booking system */
+.keep { background: linear-gradient(180deg, var(--ground) 0%, #121A2C 100%); }
+.lands { list-style: none; margin: 0; padding: 8px 32px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); }
+.lands li { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 20px 0; border-top: 1px solid var(--border); }
+.lands li:first-child { border-top: 0; }
+.lands b { font: 500 26px/1.1 var(--display); color: var(--ink); }
+.lands span { color: var(--ink-soft); font-size: 15px; text-align: right; }
+
+/* Room kit */
+.kit-art { border-radius: var(--r-md); border: 1px solid var(--border); min-height: 420px; display: grid; place-items: center; background: radial-gradient(80% 70% at 50% 40%, #26314D 0%, var(--ground) 100%); }
+.sticker { width: 220px; padding: 22px 22px 20px; border-radius: var(--r-sm); background: var(--ink); color: var(--accent-ink); box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5); transform: rotate(-3deg); text-align: center; }
+.qr { display: block; width: 100%; height: auto; background: #fff; padding: 8px; border-radius: 6px; }
+.sticker-room { font: 500 26px/1.1 var(--display); margin-top: 14px; }
+.sticker-cta { font-size: 14px; font-weight: 500; margin-top: 4px; }
+.kit .lead { margin-top: 20px; }
+
+/* Who walks in? */
+.who-facts { margin-top: 0; }
+.who-facts div:last-child { border-bottom: 1px solid var(--border); }
+
+/* Pricing: start-free line */
+.price-start { margin-top: 32px; font: 500 clamp(24px, 2.6vw, 32px)/1.2 var(--display); color: var(--ink); }
+
+@media (max-width: 900px) {
+  .split { grid-template-columns: 1fr; gap: 32px; }
+  .kit-art { min-height: 340px; }
+}
+@media (max-width: 720px) {
+  .lands { padding: 4px 20px; }
+  .lands li { flex-direction: column; gap: 4px; }
+  .lands span { text-align: left; }
+}

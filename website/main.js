@@ -24,7 +24,8 @@ if (marketOrigin) {
   });
 }
 
-document.title = PRODUCT_NAME;
+// Pages with their own SEO title opt out with <html data-keep-title>.
+if (!document.documentElement.hasAttribute('data-keep-title')) document.title = PRODUCT_NAME;
 document.querySelectorAll('[data-product]').forEach(el => { el.textContent = PRODUCT_NAME; });
 
 // Hero board lives in board.js (data in board-data.js).

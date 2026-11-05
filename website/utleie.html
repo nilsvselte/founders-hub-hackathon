@@ -8,10 +8,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;1,500&family=Inter:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="hero.css">
+<link rel="stylesheet" href="styles.css?v=2">
+<link rel="stylesheet" href="hero.css?v=2">
 <link rel="stylesheet" href="spaces.css">
-<link rel="stylesheet" href="renters.css">
+<link rel="stylesheet" href="renters.css?v=2">
 </head>
 <body class="page-renters">
 <a class="skip" href="#main">Skip to content</a>
@@ -44,6 +44,7 @@
         <a class="btn btn-primary" href="http://127.0.0.1:3001/register?role=host" data-marketplace>Become a host</a>
         <a class="btn btn-ghost" href="#worth">What is my idle time worth?</a>
       </div>
+      <p class="proof">Digs, Krambugata 2: live since 5 Nov 2026.</p>
     </div>
 
     <div class="container">
@@ -91,6 +92,21 @@
             <p>It matches the freed time to people already looking, quotes inside your limits, books the slot and updates your calendar.</p></li>
         </ol>
       </div>
+    </div>
+  </section>
+
+  <section class="keep" id="keep" aria-labelledby="keep-h">
+    <div class="container split">
+      <div>
+        <h2 class="section-title" id="keep-h">Keep your booking system</h2>
+        <p class="lead">Every standby booking lands in your own calendar. Nothing to switch, and we only fill rooms that would sit empty.</p>
+      </div>
+      <ul class="lands" aria-label="Where bookings land">
+        <li><b>Outlook</b><span>Booking added to the room calendar</span></li>
+        <li><b>Google Calendar</b><span>Booking added to the room calendar</span></li>
+        <li><b>OfficeRnD</b><span>Booking added to the room calendar</span></li>
+        <li><b>Anything else</b><span>An email invite to the room</span></li>
+      </ul>
     </div>
   </section>
 
@@ -158,6 +174,25 @@
     </div>
   </section>
 
+  <section class="kit" id="kit" aria-labelledby="kit-h">
+    <div class="container device-grid">
+      <div>
+        <h2 class="section-title" id="kit-h">Put standbyroom in your rooms</h2>
+        <p class="lead">One QR code per room on the door and one in reception, so people walking past can book in seconds.</p>
+        <div class="cta-row">
+          <a class="btn btn-gold" href="http://127.0.0.1:3001/register?role=host" data-marketplace>Get your room kit (free)</a>
+        </div>
+      </div>
+      <div class="kit-art" aria-hidden="true">
+        <div class="sticker">
+          <svg viewBox="0 0 21 21" class="qr" shape-rendering="crispEdges"><path fill="#0F1420" d="M0 0h7v7H0zM14 0h7v7h-7zM0 14h7v7H0z"/><path fill="#fff" d="M1 1h5v5H1zM15 1h5v5h-5zM1 15h5v5H1z"/><path fill="#0F1420" d="M2 2h3v3H2zM16 2h3v3h-3zM2 16h3v3H2zM8 0h1v2H8zM10 1h2v1h-2zM9 3h2v2H9zM12 4h1v3h-1zM8 6h2v1H8zM0 8h2v1H0zM3 8h3v1H3zM8 8h3v2H8zM13 8h2v1h-2zM16 8h1v3h-1zM18 8h3v1h-3zM1 10h2v2H1zM5 10h2v1H5zM11 10h1v3h-1zM14 10h1v2h-1zM19 10h2v2h-2zM8 12h2v1H8zM4 12h1v1H4zM17 12h1v1h-1zM8 14h1v3H8zM10 15h3v1h-3zM14 14h2v2h-2zM18 14h1v2h-1zM13 17h1v4h-1zM15 17h3v1h-3zM9 18h3v1H9zM19 17h2v1h-2zM16 19h2v2h-2zM8 20h3v1H8zM20 20h1v1h-1z"/></svg>
+          <p class="sticker-room">Bakklandet</p>
+          <p class="sticker-cta">Scan to book this room</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="control" id="control">
     <div class="container">
       <h2 class="section-title">You decide. The agent only sells inside your rules.</h2>
@@ -167,6 +202,17 @@
         <article class="ctl"><p class="ctl-k">Turnaround</p><h3>A buffer to tidy</h3><p>Choose how many minutes stay free between guests. The agent books around it.</p></article>
         <article class="ctl"><p class="ctl-k">Payouts</p><h3>Paid out monthly</h3><p>Every booking shows in one report, with the fee already taken off. Paid to your account each month.</p></article>
       </div>
+    </div>
+  </section>
+
+  <section class="who" id="who" aria-labelledby="who-h">
+    <div class="container split">
+      <h2 class="section-title" id="who-h">Who walks in?</h2>
+      <dl class="facts who-facts">
+        <div><dt>Named and confirmed</dt><dd>Every booker is named and confirmed before they arrive.</dd></div>
+        <div><dt>Your rules</dt><dd>You set which rooms, which hours and how many minutes of buffer between meetings.</dd></div>
+        <div><dt>Your door policy</dt><dd>Door access follows your own rules for guests.</dd></div>
+      </dl>
     </div>
   </section>
 
@@ -185,6 +231,7 @@
           <li><b>~1 500 kr</b><span>Per button, one-off <span class="est">estimate</span></span></li>
         </ul>
       </div>
+      <p class="price-start">Start with QR stickers: 0 kr. Add release buttons later.</p>
       <p class="pfacts-note">Device price is a placeholder until hardware is costed.</p>
     </div>
   </section>
