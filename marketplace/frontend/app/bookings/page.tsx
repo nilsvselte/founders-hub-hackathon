@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useAccount } from "../account";
+import { DemoGuestButton, useAccount } from "../account";
 import { GoogleCalendarLink } from "../google-calendar-link";
 import type { CalendarOffer } from "../google-calendar";
 import { api, money } from "../market";
@@ -96,7 +96,7 @@ export default function BookingsPage() {
         <li><LiveRoomLink /></li>
       </ul>
       {loading ? <p role="status">Checking your account…</p> : !account ? (
-        <p><Link className="identity-primary" href="/sign-in?next=%2Fbookings">Sign in to see your bookings</Link></p>
+        <p><DemoGuestButton className="identity-primary" /></p>
       ) : account.role === "host" ? (
         <p><Link className="identity-primary" href="/host">Go to your host dashboard</Link></p>
       ) : !current ? <p role="status">Loading your bookings…</p> : current.error ? (

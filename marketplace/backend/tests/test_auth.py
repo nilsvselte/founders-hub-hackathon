@@ -50,3 +50,27 @@ class AccountValidationTests(unittest.IsolatedAsyncioTestCase):
                 status, _, body = await self.post("/auth/register", {**valid, field: valid[field] + chr(0xD800)})
                 self.assertEqual(status, 422)
                 self.assertNotIn(b"synthetic-secret-8912", body)
+
+
+class DemoSessionTests(unittest.IsolatedAsyncioTestCase):
+    async def test_demo_session_is_off_when_flag_is_zero(self):
+        import os
+        from unittest import mock
+
+        app = FastAPI()
+        app.include_router(router)
+        messages = []
+        scope = {
+            "type": "http", "method": "POST", "path": "/auth/demo-session", "query_string": b"",
+            "headers": [(b"x-marketplace-request", b"1")],
+        }
+
+        async def receive():
+            return {"type": "http.request", "body": b""}
+
+        async def send(message):
+            messages.append(message)
+
+        with mock.patch.dict(os.environ, {"MARKETPLACE_DEMO_GUEST": "0"}):
+            await app(scope, receive, send)
+        self.assertEqual(messages[0]["status"], 404)

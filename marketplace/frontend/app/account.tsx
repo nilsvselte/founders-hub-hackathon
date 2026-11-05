@@ -248,3 +248,29 @@ export function AccountForm({
     </main>
   );
 }
+
+export function DemoGuestButton({ className = "button primary", label = "Continue as demo guest" }: { className?: string; label?: string }) {
+  const { setAccount } = useAccount();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function start() {
+    setBusy(true);
+    setError("");
+    try {
+      setAccount(await api<Account>("auth/demo-session", { method: "POST" }));
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Couldn’t start the demo. Try again.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button type="button" className={className} onClick={() => void start()} disabled={busy}>
+        {busy ? "Starting demo…" : label} <span aria-hidden="true">→</span>
+      </button>
+      {error && <p className="error" role="alert">{error}</p>}
+    </>
+  );
+}

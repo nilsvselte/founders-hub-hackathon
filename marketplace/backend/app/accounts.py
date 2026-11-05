@@ -280,6 +280,39 @@ def login(body: Credentials, request: Request, response: Response) -> Account:
     return Account.model_validate(account)
 
 
+DEMO_GUEST_EMAIL = "demo-guest@standbyroom.demo"
+
+
+def demo_guest_enabled() -> bool:
+    """Shared signed-out demo renter. On unless MARKETPLACE_DEMO_GUEST=0."""
+    return os.getenv("MARKETPLACE_DEMO_GUEST", "1") != "0"
+
+
+@router.post("/demo-session", dependencies=[Depends(require_browser_mutation)])
+def demo_session(request: Request, response: Response) -> Account:
+    """Sign the visitor in as the shared demo renter. That account has no usable password."""
+    if not demo_guest_enabled():
+        raise HTTPException(status_code=404, detail="Not found")
+    with _connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO marketplace_users (id, name, email, role, password_salt, password_hash)
+            VALUES (%s, 'Demo guest', %s, 'renter', %s, %s)
+            ON CONFLICT (email) DO NOTHING
+            """,
+            (uuid4(), DEMO_GUEST_EMAIL, secrets.token_bytes(16), secrets.token_bytes(32)),
+        )
+        account = connection.execute(
+            "SELECT id, name, email, role FROM marketplace_users WHERE email = %s AND role = 'renter'",
+            (DEMO_GUEST_EMAIL,),
+        ).fetchone()
+        if account is None:
+            raise HTTPException(status_code=503, detail="Demo guest is unavailable")
+        token = _issue_session(connection, request, account["id"])
+    _set_session_cookie(response, token)
+    return Account.model_validate(account)
+
+
 @router.get("/me")
 def me(response: Response, account: Account = Depends(require_user)) -> Account:
     response.headers["Cache-Control"] = "no-store"
