@@ -49,7 +49,7 @@ function RoomStatus({ room, now }: { room: Listing; now: number }) {
           ? <>{sensor.occupied ? "Occupied" : "Empty"} since <time dateTime={sensor.changed_at}>{clock(sensor.changed_at, now)}</time></>
           : "No sensor"}
       </span>
-      {ghostMinutes !== null && <strong className={styles.ghost} role="status">⚠ Booked but empty for {ghostMinutes} min</strong>}
+      {ghostMinutes !== null && <strong className={styles.ghost} role="status">⚠ {room.current_booking ? "Booked" : "Blocked"} but empty for {ghostMinutes} min</strong>}
     </div>
   );
 }

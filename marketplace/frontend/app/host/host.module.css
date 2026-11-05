@@ -61,7 +61,7 @@
 .booked { background: #f1e2e4; color: #6f2834; }
 .occupied { background: #e7eee0; color: #3b5737; }
 .noSensor { border: 1px dashed var(--host-line); color: var(--host-muted); }
-.ghost { background: #f9ecec; color: #8a303d; border: 1px solid #e3b9bd; font-weight: 750; }
+.ghost { white-space: normal; background: #f9ecec; color: #8a303d; border: 1px solid #e3b9bd; font-weight: 750; }
 .roomInfo .actions { margin-top: 12px; }
 .roomInfo .secondary { min-height: 34px; padding: 5px 10px; font-size: .75rem; }
 .preview { color: var(--host-accent); font-size: .76rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
