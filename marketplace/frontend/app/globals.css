@@ -613,3 +613,38 @@ fieldset { min-width: 0; padding: 0; border: 0; margin: 0; }
 .room-venue-note p { margin-top: 5px; }
 .room-venue-note a { display: inline-block; margin-top: 8px; color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; }
 .room-venue-note a:hover { text-decoration: underline; }
+
+.demo-room-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.demo-room-link:hover { border-color: var(--accent); color: var(--accent); }
+.demo-room-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+.dash-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; padding: 0; list-style: none; }
+.dash-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  background: var(--ghost);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.dash-links a:hover { color: var(--accent); }
+.dash-section { margin-top: 30px; }
+.dash-section > h2 { font-size: 15px; font-weight: 600; color: var(--muted); }
+.dash-section > p { margin-top: 8px; color: var(--muted); font-size: 14px; }
+.booking-row h3 { margin-top: 5px; }
+.dash-section .booking-list { margin-top: 10px; }

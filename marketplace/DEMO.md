@@ -16,6 +16,8 @@ docker compose exec -e DEMO_HOST_PASSWORD="$DEMO_HOST_PASSWORD" api .venv/bin/py
 
 Compose serves the marketplace on `3000`. For Compose or a hosted HTTPS preview, set `data-marketplace-origin` on the landing page’s `main.js` script tag to the matching marketplace origin. To show the installable phone app separately, open that HTTPS preview on the phone. [Phone app setup](../docs/phone-app.md)
 
+**Live demo room link.** `DEMO_ROOM_ID` in `frontend/app/demo-room.tsx` sets the room behind every **Live demo room** link (now `digs-demo-1`). Change that one line when the physical room is ready.
+
 ## On stage
 
 | Show | Say and do |
