@@ -28,6 +28,8 @@ vercel deploy
 
 Use the same Vercel project for subsequent previews. Open its preview URL and verify the listings load. Register a test host, publish a room and release an opening. Register a renter in another session, request that room and confirm the booking. The authenticated `GET /api/auth/me` should return the signed-in user and `GET /api/ready` should report database readiness. For protected previews, use `vercel curl /api/ready --deployment <preview-url>` or test from the authenticated browser. [Deploy from the Vercel CLI](https://vercel.com/docs/projects/deploy-from-cli)
 
+For a private Daytona test API, set `MARKETPLACE_API_MODE=private-proxy` in Preview and add its signed HTTPS origin as the **Sensitive** Preview variable `MARKETPLACE_PRIVATE_API_URL`. The Next.js server forwards marketplace requests without exposing the signed origin to the browser. Redeploy after changing the origin or when the signed URL expires. [Daytona signed preview URLs](https://www.daytona.io/docs/en/preview/#signed-preview-url)
+
 ## Production
 
 Use a dedicated API service and database with backups. Set the backend's `DATABASE_URL` and `MARKETPLACE_SECURE_COOKIES=1`. Leave demo mode off and configure `ANTHROPIC_API_KEY` for matching. Set the Vercel project's **Production** `MARKETPLACE_API_URL` to the production API origin. Verify the production API's `/ready` and run `vercel deploy --prod` from the linked repository root when the release is ready.

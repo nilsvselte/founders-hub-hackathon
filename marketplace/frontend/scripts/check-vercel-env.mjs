@@ -1,6 +1,9 @@
-const error = "Set MARKETPLACE_API_URL to the hosted API's HTTPS origin before deploying.";
+const originKey = process.env.MARKETPLACE_API_MODE === "private-proxy"
+  ? "MARKETPLACE_PRIVATE_API_URL"
+  : "MARKETPLACE_API_URL";
+const error = `Set ${originKey} to the hosted API's HTTPS origin before deploying.`;
 const frontendHosts = [process.env.VERCEL_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL];
-const value = process.env.MARKETPLACE_API_URL ?? "";
+const value = process.env[originKey] ?? "";
 
 try {
   const api = new URL(value);

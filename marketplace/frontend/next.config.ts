@@ -6,7 +6,8 @@ const nextConfig: NextConfig = {
   agentRules: false,
   devIndicators: false,
   async rewrites() {
-    return [{ source: "/api/:path*", destination: `${apiUrl}/:path*` }];
+    if (process.env.MARKETPLACE_API_MODE === "private-proxy") return [];
+    return { beforeFiles: [{ source: "/api/:path*", destination: `${apiUrl}/:path*` }] };
   },
 };
 
