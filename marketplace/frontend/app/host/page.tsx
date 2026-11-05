@@ -21,7 +21,7 @@ type Listing = Room & {
 type Release = { created: boolean; opening_id?: string | null; reason?: string | null };
 const kinds = ["Studio", "Workshop", "Meeting room", "Boardroom"];
 
-const REFRESH_MS = 2_000;
+const REFRESH_MS = 1_000;
 const osloClock = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 const osloDay = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Oslo", day: "numeric", month: "short" });
 

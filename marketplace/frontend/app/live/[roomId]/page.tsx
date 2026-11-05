@@ -16,7 +16,7 @@ type LiveRoom = {
   active_block: Span | null;
 };
 
-const POLL_MS = 2_000;
+const POLL_MS = 1_000;
 const clock = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
 });
