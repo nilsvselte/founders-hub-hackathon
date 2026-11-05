@@ -82,7 +82,7 @@ em { font-style: italic; color: var(--accent); }
 .nav nav { display: flex; gap: 28px; margin-right: auto; }
 .nav nav a { font-size: 15px; color: var(--ink-soft); text-decoration: none; }
 .nav nav a:hover { color: var(--ink); }
-/* Side switch: Finn rom (index.html) / Leie ut rom (utleie.html) */
+/* Side switch: Find a room (index.html) / Rent out rooms (utleie.html) */
 .nav .side-switch { display: inline-flex; gap: 2px; margin-right: 0; padding: 3px; border: 1px solid var(--border); border-radius: var(--r-full); background: rgba(222, 216, 198, 0.06); }
 .nav .side-switch a { font-size: 14px; font-weight: 500; padding: 7px 14px; border-radius: var(--r-full); color: var(--muted); white-space: nowrap; }
 .nav .side-switch a:hover { color: var(--ink); }
@@ -92,6 +92,16 @@ em { font-style: italic; color: var(--accent); }
   .nav .side-switch a { font-size: 13px; padding: 6px 10px; }
   .nav-inner:has(.side-switch) > .btn { display: none; }
 }
+
+/* Nav at small widths */
+.nav .wordmark, .nav-inner > .btn { white-space: nowrap; }
+@media (max-width: 720px) { .nav-inner { gap: 12px; } }
+@media (max-width: 480px) {
+  .nav-inner { gap: 8px; }
+  .nav .wordmark { font-size: 20px; }
+  .nav-inner > .btn { font-size: 13px; padding: 9px 11px; }
+}
+@media (max-width: 380px) { .nav-inner > .btn { font-size: 12px; padding: 8px 9px; } }
 
 /* Hero */
 .hero { position: relative; padding: 168px 0 96px; overflow: hidden; background: linear-gradient(180deg, var(--ground-deep) 0%, #131B30 55%, var(--ground) 100%); }
