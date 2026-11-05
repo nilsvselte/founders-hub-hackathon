@@ -1,0 +1,57 @@
+/* Owned by the spaces/device agent: problem facts, idle-time calculator, device button. */
+
+/* Problem facts */
+.pfacts { list-style: none; margin: 40px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.pfacts li { border-top: 1px solid var(--border); padding-top: 18px; color: var(--ink-soft); font-size: 15px; }
+.pfacts b { display: block; font: 500 44px/1 var(--display); color: var(--ink); letter-spacing: -0.02em; margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+.est { font-size: 12px; color: var(--muted); border: 1px solid var(--border); border-radius: var(--r-full); padding: 1px 8px; margin-left: 6px; vertical-align: 2px; white-space: nowrap; }
+.pfacts-note { margin-top: 20px; font-size: 13px; color: var(--muted); }
+
+/* Idle-time calculator */
+.worth { background: #121A2C; padding-top: 0 !important; }
+.worth-card {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 40px;
+}
+.worth-card h2 { font-size: clamp(32px, 3.6vw, 44px); line-height: 1.05; letter-spacing: -0.02em; }
+.worth-sub { margin-top: 12px; color: var(--ink-soft); max-width: 44ch; }
+.calc { display: grid; gap: 22px; margin-top: 28px; }
+.calc label { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 15px; color: var(--ink-soft); }
+.calc output { font: 500 22px/1 var(--display); color: var(--ink); font-variant-numeric: tabular-nums; }
+.calc input[type=range] { width: 100%; margin: 10px 0 0; accent-color: var(--accent); height: 28px; cursor: pointer; }
+.worth-out { display: flex; flex-direction: column; gap: 16px; }
+.worth-total {
+  border: 1px solid var(--accent); border-radius: var(--r-sm); background: rgba(233, 182, 56, 0.06); padding: 24px;
+}
+.worth-total p { font-size: 14px; color: var(--muted); }
+.worth-total .kr { font: 500 clamp(44px, 5vw, 64px)/1.05 var(--display); color: var(--accent); letter-spacing: -0.02em; margin: 6px 0; font-variant-numeric: tabular-nums; transition: transform var(--t-fast) var(--spring); }
+.worth-total .kr.bump { transform: scale(1.03); }
+.worth-math { list-style: none; margin: 0; padding: 0; }
+.worth-math li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 15px; }
+.worth-math span { color: var(--ink); font-variant-numeric: tabular-nums; }
+.controls-h { font-size: 14px; color: var(--accent); font-weight: 500; margin-top: 8px; }
+.controls { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 15px; color: var(--ink-soft); }
+.controls li { display: grid; grid-template-columns: 150px 1fr; gap: 12px; }
+.controls b { color: var(--ink); font-weight: 500; }
+.worth-note { font-size: 13px; color: var(--muted); }
+
+/* Device: the release button */
+.unit-btn.press { border: 0; cursor: pointer; font-family: var(--text); position: relative; transition: transform 120ms var(--ease), box-shadow 120ms var(--ease); }
+.unit-btn.press:hover { background: #F2C653; }
+.unit-btn.press:active, .unit-btn.press.down { transform: translateY(6px); box-shadow: 0 2px 0 #A97900, 0 6px 12px rgba(0, 0, 0, 0.4); }
+.unit-btn.press::after { content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
+.unit-btn.press.pulse::after { animation: ring 900ms var(--ease) both; }
+@keyframes ring { from { box-shadow: 0 0 0 0 rgba(233, 182, 56, 0.7); } to { box-shadow: 0 0 0 40px rgba(233, 182, 56, 0); } }
+.unit-led.busy { background: var(--accent); box-shadow: 0 0 12px var(--accent); animation: blink 600ms steps(2) 3; }
+@keyframes blink { 50% { opacity: 0.2; } }
+.unit-screen { width: 100%; text-align: center; font: 500 13px/1.3 var(--text); color: var(--good); background: #0B1019; border: 1px solid rgba(195, 210, 240, 0.12); border-radius: 8px; padding: 8px 6px; min-height: 2.6em; font-variant-numeric: tabular-nums; }
+.unit-hint { margin-top: 18px; font-size: 14px; color: var(--muted); text-align: center; }
+
+@media (max-width: 900px) {
+  .pfacts { grid-template-columns: 1fr; gap: 16px; }
+  .worth-card { grid-template-columns: 1fr; gap: 32px; }
+}
+@media (max-width: 720px) {
+  .worth-card { padding: 24px; }
+  .controls li { grid-template-columns: 1fr; gap: 2px; }
+}

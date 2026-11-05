@@ -9,6 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;1,500&family=Inter:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="board.css">
+<link rel="stylesheet" href="hero.css">
+<link rel="stylesheet" href="spaces.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -27,30 +30,7 @@
 
 <main id="main">
   <section class="hero" id="top">
-    <svg class="sky" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-      <defs>
-        <radialGradient id="moonGlow" cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0" stop-color="#F4F1E6" stop-opacity=".22"/>
-          <stop offset="1" stop-color="#F4F1E6" stop-opacity="0"/>
-        </radialGradient>
-        <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#1A2540"/>
-          <stop offset="1" stop-color="#0F1420"/>
-        </linearGradient>
-      </defs>
-      <g class="stars" fill="#F4F1E6">
-        <circle cx="120" cy="90" r="1.2"/><circle cx="260" cy="170" r=".9"/><circle cx="410" cy="60" r="1.1"/><circle cx="560" cy="140" r=".8"/>
-        <circle cx="700" cy="40" r="1.3"/><circle cx="880" cy="120" r=".9"/><circle cx="1010" cy="70" r="1"/><circle cx="1200" cy="160" r="1.2"/>
-        <circle cx="1330" cy="80" r=".8"/><circle cx="60" cy="240" r=".9"/><circle cx="1380" cy="250" r="1"/><circle cx="340" cy="300" r=".7"/>
-        <circle cx="1100" cy="300" r=".8"/><circle cx="640" cy="230" r=".7"/><circle cx="790" cy="260" r=".9"/>
-      </g>
-      <circle cx="1150" cy="230" r="90" fill="url(#moonGlow)"/>
-      <circle cx="1150" cy="230" r="26" fill="#E8E4D2" opacity=".85"/>
-      <path d="M0 610 L120 540 L210 575 L330 470 L430 545 L520 505 L610 560 L720 520 L800 555 L900 470 L1010 540 L1110 500 L1220 560 L1330 490 L1440 540 L1440 900 L0 900Z" fill="#1A2133"/>
-      <path d="M0 650 L90 610 L180 640 L300 590 L420 640 L560 600 L680 650 L820 615 L960 650 L1080 605 L1200 645 L1320 600 L1440 640 L1440 900 L0 900Z" fill="#141B2B"/>
-      <rect x="0" y="680" width="1440" height="220" fill="url(#water)"/>
-      <rect x="1140" y="690" width="20" height="2" fill="#E8E4D2" opacity=".4"/><rect x="1128" y="704" width="44" height="2" fill="#E8E4D2" opacity=".25"/><rect x="1136" y="720" width="28" height="2" fill="#E8E4D2" opacity=".18"/>
-    </svg>
+    <div class="hero-art" aria-hidden="true"></div>
 
     <div class="container hero-copy">
       <p class="where">Live at Digs, Trondheim</p>
@@ -66,14 +46,22 @@
       <div class="board" aria-label="Live demo: the agent matching rooms to a request">
         <div class="board-col">
           <div class="board-head"><h2 class="board-title">Your preferences</h2><span class="demo-tag">Demo</span></div>
-          <ul class="chips">
-            <li><b>When</b> today, 15:15–16:30</li>
-            <li><b>Length</b> 30–60 min</li>
-            <li><b>People</b> 3</li>
-            <li><b>Needs</b> screen, whiteboard</li>
-            <li><b>Budget</b> up to 300 kr</li>
-            <li><b>Flexible</b> ±15 min</li>
-          </ul>
+          <form class="prefs" id="prefs" aria-label="Your preferences: change any to re-rank">
+            <div class="pf pf-when"><span class="pf-label">When, today</span>
+              <span class="pf-times"><input type="time" name="from" value="15:15" step="300" aria-label="From"><span aria-hidden="true">–</span><input type="time" name="to" value="16:30" step="300" aria-label="To"></span></div>
+            <div class="pf"><span class="pf-label">People</span>
+              <span class="stepper"><button type="button" data-step="-1" aria-label="Fewer people">−</button><output data-people aria-live="polite">4</output><button type="button" data-step="1" aria-label="More people">+</button></span></div>
+            <div class="pf pf-wide"><span class="pf-label">Length</span>
+              <span class="seg" data-seg="duration" role="group" aria-label="Length"><button type="button" data-v="30">30 min</button><button type="button" data-v="45" aria-pressed="true">45</button><button type="button" data-v="60">60</button><button type="button" data-v="90">90</button></span></div>
+            <div class="pf pf-wide"><span class="pf-label">Needs</span>
+              <span class="tog" role="group" aria-label="Equipment"><button type="button" data-equip="screen" aria-pressed="true">Screen</button><button type="button" data-equip="whiteboard" aria-pressed="true">Whiteboard</button><button type="button" data-equip="video" aria-pressed="false">Video</button></span></div>
+            <div class="pf pf-wide"><label class="pf-label" for="pf-budget">Budget, up to <output data-budget-out>300 kr</output></label>
+              <input type="range" id="pf-budget" name="budget" min="100" max="600" step="20" value="300"></div>
+            <div class="pf"><span class="pf-label">Where</span>
+              <span class="seg" data-seg="zone" role="group" aria-label="Where"><button type="button" data-v="any">Any</button><button type="button" data-v="quiet" aria-pressed="true">Quiet</button><button type="button" data-v="cafe">Café</button></span></div>
+            <div class="pf"><span class="pf-label">Flexible</span>
+              <span class="seg" data-seg="flex" role="group" aria-label="Flexibility"><button type="button" data-v="0">±0</button><button type="button" data-v="15" aria-pressed="true">±15</button><button type="button" data-v="30">±30</button></span></div>
+          </form>
           <div class="log" id="log" aria-live="polite"><span>Agent: watching 6 rooms for you…</span></div>
           <div class="board-btns">
             <button class="btn btn-gold" id="rel" type="button">Release room</button>
@@ -82,11 +70,12 @@
           <p class="hint">Press it the way staff do when a meeting ends early.</p>
         </div>
         <div class="board-col">
-          <div class="board-head"><h2 class="board-title">Ranked for you</h2></div>
+          <div class="board-head"><h2 class="board-title">Ranked for you</h2><span class="agent-status" id="agent-status" aria-live="polite">Agent watching</span></div>
           <ol class="matches" id="matches">
             <li class="m"><span class="rank">1</span><div><strong>Nidelva</strong> · 16:30–17:15<span class="why">8 seats, screen. Later than you wanted.</span></div><span class="fit">71%</span></li>
             <li class="m"><span class="rank">2</span><div><strong>Phone booth 2</strong> · now<span class="why">Free now, but seats 1.</span></div><span class="fit">38%</span></li>
           </ol>
+          <p class="more" id="more"></p>
           <div class="quote" id="quote" hidden>
             <div><span class="q-room">Bakklandet · 15:25–16:00</span><span class="q-price">180 kr <s>320 kr</s></span><span class="q-note">Held for you for 2 minutes</span></div>
             <button class="btn btn-primary btn-sm" id="accept" type="button">Accept</button>
@@ -98,8 +87,13 @@
 
   <section class="problem">
     <div class="container">
-      <p class="big-line">Meetings end early. The room sits empty, and the hour is gone.</p>
-      <p class="lead">Booked rooms at a coworking house free up all day, but nobody hears about it in time. <span data-product>Mesh standby</span> sells that time to people who are already waiting for it.</p>
+      <p class="big-line">The meeting ended early. The room is paid for, empty, and nobody knows.</p>
+      <ul class="pfacts">
+        <li><b>~1 in 3</b><span class="est">estimate</span><br>booked meetings end before their slot does.</li>
+        <li><b>20–40 min</b><span class="est">estimate</span><br>left over each time, too short to rebook by hand.</li>
+        <li><b>0 kr</b><br>earned from that time today. It just disappears.</li>
+      </ul>
+      <p class="pfacts-note">Estimates for a Digs-sized coworking house, not measured data.</p>
     </div>
   </section>
 
@@ -149,20 +143,69 @@
         <article class="door">
           <p class="door-who">For spaces with rooms to fill</p>
           <h3>Sell the hour you were going to lose.</h3>
-          <p>Staff press one button when a meeting ends early. You set the floor and ceiling price; the agent fills the gap. Free to list, with a share of each standby booking.</p>
-          <a class="link" href="#marketplace">List my rooms</a>
+          <p>Staff press one button when a meeting ends early. You set the floor and ceiling price; the agent fills the gap. Free to list; we keep 15% of each standby booking.</p>
+          <a class="link" href="#worth">What is my idle time worth?</a>
         </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="worth" id="worth" aria-labelledby="worth-h">
+    <div class="container">
+      <div class="worth-card">
+        <div>
+          <h2 id="worth-h">What idle time is worth</h2>
+          <p class="worth-sub">Time your rooms already lose each week, sold at standby prices. Move the sliders to match your space.</p>
+          <form class="calc" id="worth-calc">
+            <div>
+              <label for="w-rooms">Meeting rooms <output id="o-rooms" for="w-rooms">8</output></label>
+              <input type="range" id="w-rooms" name="rooms" min="1" max="30" step="1" value="8">
+            </div>
+            <div>
+              <label for="w-hrs">Hours freed per room, per week <output id="o-hours" for="w-hrs">6 h</output></label>
+              <input type="range" id="w-hrs" name="hours" min="1" max="20" step="1" value="6">
+            </div>
+            <div>
+              <label for="w-price">Standby price per hour <output id="o-price" for="w-price">300 kr</output></label>
+              <input type="range" id="w-price" name="price" min="100" max="800" step="25" value="300">
+            </div>
+          </form>
+        </div>
+        <div class="worth-out">
+          <div class="worth-total" aria-live="polite">
+            <p>You keep, per month</p>
+            <p class="kr" id="w-total">53 040 kr</p>
+            <p>from time that earns nothing today</p>
+          </div>
+          <ul class="worth-math">
+            <li>Freed hours per month <span id="w-hours">208 h</span></li>
+            <li>Sold at your price <span id="w-gross">62 400 kr</span></li>
+            <li>Platform fee, 15% <span id="w-fee">− 9 360 kr</span></li>
+            <li>Per year, after fee <span id="w-year">636 480 kr</span></li>
+          </ul>
+          <p class="controls-h">You stay in control</p>
+          <ul class="controls">
+            <li><b>Price floor and ceiling</b> The agent quotes only inside your limits, per room.</li>
+            <li><b>Turnaround buffer</b> Minutes kept free to tidy before the next guest.</li>
+            <li><b>Rooms and hours</b> Choose which rooms can go on standby, and when.</li>
+          </ul>
+          <p class="worth-note">Estimate. Assumes every freed hour sells; real fill will be lower at first.</p>
+        </div>
       </div>
     </div>
   </section>
 
   <section class="device" id="device">
     <div class="container device-grid">
-      <div class="device-art" aria-hidden="true">
-        <div class="unit">
-          <div class="unit-led"></div>
-          <div class="unit-btn">Release room</div>
-          <div class="unit-label">Bakklandet · 2nd floor</div>
+      <div class="device-art">
+        <div>
+          <div class="unit">
+            <div class="unit-led" id="unit-led" aria-hidden="true"></div>
+            <div class="unit-screen" id="unit-screen" aria-live="polite">Ready</div>
+            <button class="unit-btn press" id="unit-release" type="button">Release room</button>
+            <div class="unit-label">Bakklandet · 2nd floor</div>
+          </div>
+          <p class="unit-hint">Try it: press the button.</p>
         </div>
       </div>
       <div>
@@ -197,5 +240,10 @@
 </footer>
 
 <script src="main.js"></script>
+<script src="board-data.js"></script>
+<script src="board.js"></script>
+<script src="hero-art.js"></script>
+<script src="spaces.js"></script>
+<script src="i18n.js"></script>
 </body>
 </html>

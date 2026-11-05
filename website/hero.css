@@ -1,0 +1,50 @@
+/* Hero look: painted night fjord behind the headline (owner: hero look). Loads after styles.css. */
+.hero { background: var(--ground); }
+.hero .sky { display: none; }
+.hero-art {
+  position: absolute; inset: 0 0 auto 0; height: 100%; min-height: 720px;
+  pointer-events: none; overflow: hidden;
+}
+.hero-art {
+  background:
+    radial-gradient(1px 1px at 12% 18%, rgba(244,241,230,.8), transparent 60%),
+    radial-gradient(1px 1px at 34% 8%, rgba(244,241,230,.6), transparent 60%),
+    radial-gradient(1.5px 1.5px at 58% 22%, rgba(244,241,230,.7), transparent 60%),
+    radial-gradient(1px 1px at 81% 12%, rgba(244,241,230,.6), transparent 60%),
+    radial-gradient(1px 1px at 92% 30%, rgba(244,241,230,.5), transparent 60%),
+    radial-gradient(1px 1px at 6% 40%, rgba(244,241,230,.5), transparent 60%),
+    radial-gradient(1px 1px at 70% 38%, rgba(244,241,230,.5), transparent 60%),
+    #070B15;
+}
+/* The painting keeps a readable scale on narrow screens: it is pinned to the bottom and the sky colour fills above it. */
+.hero-art svg { position: absolute; left: 0; bottom: 0; display: block; width: 100%; height: clamp(600px, 87vw, 100%); }
+
+/* Headline sits in the sky; a soft scrim keeps it legible over stars and aurora. */
+.hero-copy::before {
+  content: ""; position: absolute; z-index: -1; left: 50%; top: -40px; width: min(1100px, 120%); height: calc(100% + 80px);
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(7, 11, 21, 0.55), rgba(7, 11, 21, 0));
+}
+.hero-copy { z-index: 1; }
+.hero h1, .hero .lead { text-shadow: 0 2px 24px rgba(7, 11, 21, 0.6); }
+
+/* Leave a clear window of mountains between the buttons and the board. */
+.hero .board { margin-top: clamp(240px, 30vw, 440px); }
+
+/* Motion: stars twinkle, aurora drifts, moon path shimmers. All off under reduced motion (styles.css). */
+.ha-tw1 { animation: ha-twinkle 5s ease-in-out infinite; }
+.ha-tw2 { animation: ha-twinkle 7s ease-in-out 2.5s infinite; }
+.ha-aurora { animation: ha-drift 38s ease-in-out infinite alternate; transform-box: fill-box; }
+.ha-aurora-2 { animation: ha-drift 26s ease-in-out -9s infinite alternate-reverse; }
+.ha-shimmer { animation: ha-shimmer 6s ease-in-out infinite; }
+@keyframes ha-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+@keyframes ha-drift { from { transform: translateX(-60px); opacity: 0.8; } to { transform: translateX(60px); opacity: 1; } }
+@keyframes ha-shimmer { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+@media (max-width: 720px) {
+  .hero .board { margin-top: 220px; }
+  .hero-art { min-height: 640px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ha-tw1, .ha-tw2, .ha-aurora, .ha-aurora-2, .ha-shimmer { animation: none; }
+}
