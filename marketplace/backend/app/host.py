@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
-from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
+from pydantic import AwareDatetime, BaseModel, Field, StringConstraints, field_validator, model_validator
 
 from . import db
 from .accounts import Account, require_browser_mutation, require_user
@@ -17,10 +17,20 @@ ShortText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1
 Description = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1800)]
 
 _COLUMNS = "id, name, city, venue_name AS venue, kind, description, image_key, capacity, equipment, hourly_rate_ore, published"
+_LAST_OCCUPANCY = """
+    (SELECT jsonb_build_object('occupied', occupied, 'changed_at', changed_at)
+     FROM marketplace_room_occupancy WHERE room_id = marketplace_rooms.id) AS last_occupancy
+"""
+
+
+class HostRoomOccupancy(BaseModel):
+    occupied: bool
+    changed_at: AwareDatetime
 
 
 class HostRoom(Room):
     published: bool
+    last_occupancy: HostRoomOccupancy | None = None
 
 
 class HostRoomInput(BaseModel):
@@ -55,6 +65,17 @@ class HostReleaseInput(BaseModel):
     release_id: UUID | None = None
 
 
+class HostBlockInput(BaseModel):
+    starts_at: AwareDatetime
+    ends_at: AwareDatetime
+
+
+class HostBlock(BaseModel):
+    id: UUID
+    start_at: AwareDatetime
+    end_at: AwareDatetime
+
+
 def require_host(user: Annotated[Account, Depends(require_user)]) -> Account:
     if user.role != "host":
         raise HTTPException(status_code=403, detail="A host account is required")
@@ -65,7 +86,7 @@ HostAccount = Annotated[Account, Depends(require_host)]
 
 
 def _owned_room(connection, room_id: str, owner_id: UUID, *, lock: bool = False) -> dict:
-    query = f"SELECT {_COLUMNS} FROM marketplace_rooms WHERE id = %s AND owner_id = %s"
+    query = f"SELECT {_COLUMNS}, {_LAST_OCCUPANCY} FROM marketplace_rooms WHERE id = %s AND owner_id = %s"
     if lock:
         query += " FOR UPDATE"
     room = connection.execute(query, (room_id, owner_id)).fetchone()
@@ -87,7 +108,7 @@ def list_host_rooms(host: HostAccount, response: Response) -> list[dict]:
     response.headers["Cache-Control"] = "no-store"
     with db._connect() as connection:
         return connection.execute(
-            f"SELECT {_COLUMNS} FROM marketplace_rooms WHERE owner_id = %s ORDER BY name, id",
+            f"SELECT {_COLUMNS}, {_LAST_OCCUPANCY} FROM marketplace_rooms WHERE owner_id = %s ORDER BY name, id",
             (host.id,),
         ).fetchall()
 
@@ -146,6 +167,21 @@ def update_host_room(room_id: str, body: HostRoomPatch, host: HostAccount) -> di
                 (room_id,),
             )
         return _owned_room(connection, room_id, host.id)
+
+
+@router.post(
+    "/rooms/{room_id}/blocks", status_code=201, response_model=HostBlock,
+    dependencies=[Depends(require_browser_mutation)],
+)
+def schedule_host_block(room_id: str, body: HostBlockInput, host: HostAccount) -> dict:
+    try:
+        return db.schedule_device_block(room_id, body.starts_at, body.ends_at, owner_id=host.id)
+    except db.NotFound as exc:
+        raise HTTPException(status_code=404, detail="Listing not found") from exc
+    except db.Conflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.post(

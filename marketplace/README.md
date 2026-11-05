@@ -87,6 +87,10 @@ From `marketplace/backend/`, run `uv run --locked python -m unittest discover -s
 
 ## Connect a device
 
-Set `MARKETPLACE_DEVICE_TOKEN` to enable `POST /internal/device/events`. The device integration sends `Authorization: Bearer <token>`. For local testing, the fixture adapter accepts `type: room.released`, `event_id`, `external_room_id`, `block_id`, `released_at`, and `scheduled_end_at`. Pilot room IDs are `digs-demo-1` and `digs-demo-2` for Digs, `kowork-meeting-room` and `kowork-quiet-room` for Kowork, and `brighten-meeting-room` and `brighten-phone-pod` for Brighten. Send both timestamps as ISO 8601 strings with offsets, and reuse event and block IDs when retrying the same release.
+1. Set the same `MARKETPLACE_DEVICE_TOKEN` in the marketplace API and [device server](../device/README.md). Point the device server's `MARKETPLACE_URL` to Uvicorn, such as `http://127.0.0.1:8000`, and set `DEVICES` to map each device ID to its marketplace room ID.
+2. As a host, publish the room and use **Schedule a room block** to set the room's reserved start and end in Oslo time. The authenticated endpoint is `POST /host/rooms/{room_id}/blocks` with `starts_at` and `ends_at` as ISO 8601 timestamps with offsets.
+3. Submit a renter request, then press **Release room** on the connected device while the block is active. The marketplace opens the remaining time after the turnaround buffer, which defaults to two minutes, and checks waiting requests. The device server's `/v1/outbox` shows delivery status.
 
-When the real API is ready, set `MARKETPLACE_DEVICE_ADAPTER` to a trusted Python factory path such as `app.vendor_device:create_adapter`. The factory implements `DeviceAdapter` in `backend/app/device.py`. A webhook or a poller can pass the provider payload through the same adapter. The adapter supplies a source, stable IDs, and the release window. The backend handles deduplication, availability, quotes, and booking.
+The default `atech` adapter records `room.occupancy_changed` as the last reported physical state, which the host dashboard displays with its timestamp. `room.release_requested` opens the remainder of an active scheduled block once. For an isolated test, the legacy `room.released` fixture accepts `event_id`, `external_room_id`, `block_id`, `released_at`, and `scheduled_end_at`.
+
+To use another provider, set `MARKETPLACE_DEVICE_ADAPTER` to a trusted Python factory path such as `app.vendor_device:create_adapter`. See the adapter interface in `backend/app/device.py`.

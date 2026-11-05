@@ -227,6 +227,8 @@ a.market-user:hover, a.market-user[aria-current="page"] { color: var(--accent); 
   letter-spacing: -.038em;
 }
 .browse-count, .browse-date-summary { margin-top: 4px; color: var(--muted); font-size: 13px; }
+.browse-standby { margin-bottom: 15px; color: var(--muted); font-size: 13px; }
+.browse-standby a { color: var(--accent); font-weight: 650; }
 .browse-reset {
   border: 0;
   background: none;
@@ -450,6 +452,7 @@ a.market-user:hover, a.market-user[aria-current="page"] { color: var(--accent); 
 .room-unavailable h1 { color: var(--ink); font: 690 34px/1.1 var(--sans); }
 .booking-detail-heading .room-kicker { margin-top: 14px; }
 .booking-detail-heading { margin-bottom: 24px; }
+.booking-detail-heading h1 + p { max-width: 55ch; margin-top: 9px; color: var(--muted); }
 
 .booking-grid {
   display: grid;

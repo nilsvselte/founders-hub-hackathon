@@ -14,7 +14,10 @@ from pydantic import AwareDatetime
 
 from . import db, host, preferences
 from .accounts import Account, require_browser_mutation, require_user, router as accounts_router
-from .device import FixtureDeviceAdapter, InvalidDevicePayload, demo_release_payload, load_device_adapter
+from .device import (
+    FixtureDeviceAdapter, InvalidDevicePayload, RoomRelease, RoomReleaseRequest,
+    demo_release_payload, normalize_device_event,
+)
 from .matching import MatchingUnavailable, select_match
 from .preferences import load_preferences
 from .pricing import PriceQuote
@@ -106,12 +109,17 @@ def match_request(request_id: str) -> None:
                 del _active_matches[request_id]
 
 
-def ingest_release(event: dict | None, background_tasks: BackgroundTasks) -> dict:
+def ingest_release(event: RoomRelease | RoomReleaseRequest | None, background_tasks: BackgroundTasks) -> dict:
     if event is None:
         return {"created": False, "reason": "Event does not release a room"}
     require_database()
-    result = db.record_release(event)
-    if result["created"]:
+    device_press = event.get("type") == "room.release_requested"
+    if device_press:
+        result = db.record_release_request(event)
+    else:
+        result = db.record_release(event)
+    # The opening may have committed before a previous webhook attempt could wake the matcher.
+    if result["created"] or (device_press and result.get("opening_id")):
         for request_id in db.list_pending_request_ids(event["external_room_id"]):
             background_tasks.add_task(match_request, request_id)
     return result
@@ -289,10 +297,13 @@ def device_event(
             headers={"WWW-Authenticate": "Bearer"},
         )
     try:
-        event = load_device_adapter().normalize_release(payload)
+        event = normalize_device_event(payload)
     except InvalidDevicePayload as exc:
         raise HTTPException(status_code=422, detail="Invalid device event") from exc
     except RuntimeError as exc:
         logger.warning("Device adapter unavailable: %s", type(exc).__name__)
         raise HTTPException(status_code=503, detail="Device adapter unavailable") from exc
+    if event is not None and event.get("type") == "room.occupancy_changed":
+        require_database()
+        return db.record_occupancy(event)
     return ingest_release(event, background_tasks)

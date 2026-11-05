@@ -6,14 +6,24 @@ import type { FormEvent } from "react";
 import { useAccount } from "../account";
 import { api, money, photo } from "../market";
 import type { Room } from "../market";
+import { osloInstant } from "../oslo-time";
 import styles from "./host.module.css";
 
-type Listing = Room & { published: boolean };
+type Listing = Room & { published: boolean; last_occupancy?: { occupied: boolean; changed_at: string } | null };
 type Release = { created: boolean; opening_id?: string | null; reason?: string | null };
 const kinds = ["Studio", "Workshop", "Meeting room", "Boardroom"];
+const osloReportTime = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Oslo", day: "numeric", month: "short", year: "numeric",
+  hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+});
 
 function failureMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong. Please try again.";
+}
+
+function parseOsloTime(value: FormDataEntryValue | null) {
+  const [date, time] = String(value ?? "").split("T");
+  return osloInstant({ date, time });
 }
 
 function ListingThumbnail({ imageKey }: { imageKey: string }) {
@@ -166,6 +176,24 @@ function HostDashboard() {
     });
   }
 
+  function scheduleBlock(event: FormEvent<HTMLFormElement>, room: Listing) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const values = new FormData(form);
+    const start = parseOsloTime(values.get("start"));
+    const end = parseOsloTime(values.get("end"));
+    void perform(`block-${room.id}`, async () => {
+      if (!start || !end) throw new Error("Choose valid start and end times in Oslo time.");
+      if (end <= start) throw new Error("The block must end after it starts.");
+      if (end.getTime() <= Date.now()) throw new Error("The block must end in the future.");
+      await api(`host/rooms/${encodeURIComponent(room.id)}/blocks`, {
+        method: "POST", body: JSON.stringify({ starts_at: start.toISOString(), ends_at: end.toISOString() }),
+      });
+      form.reset();
+      setNotice(`Block scheduled for ${room.name}. Press Release room on its device when the room is free.`);
+    });
+  }
+
   const selected = editor && editor !== "new" ? editor : null;
 
   return (
@@ -227,11 +255,27 @@ function HostDashboard() {
                 <h2>{room.name}</h2>
                 <p>{room.venue} · {room.city}</p>
                 <p>{room.capacity} guests · {money(room.hourly_rate_ore)} / hour</p>
+                {room.last_occupancy && (
+                  <p>Last reported {room.last_occupancy.occupied ? "occupied" : "empty"} · <time dateTime={room.last_occupancy.changed_at}>{osloReportTime.format(new Date(room.last_occupancy.changed_at))} Oslo time</time></p>
+                )}
                 <div className={styles.actions}>
                   <button className={styles.secondary} type="button" disabled={!!busy} onClick={() => openEditor(room)}>Edit listing</button>
                   <button className={styles.secondary} type="button" disabled={!!busy} onClick={() => togglePublication(room)}>{room.published ? "Unpublish" : "Publish"}</button>
                   {room.published && <Link className={styles.preview} href={`/rooms/${encodeURIComponent(room.id)}`}>View listing ↗</Link>}
                 </div>
+                {room.published && (
+                  <details className={styles.block}>
+                    <summary>Schedule a room block</summary>
+                    <p>Reserve this time for existing use. Press Release room on the room’s device to offer any remaining time. Times are in Oslo time.</p>
+                    <form className={styles.form} onSubmit={(event) => scheduleBlock(event, room)}>
+                      <label>Block starts<input name="start" type="datetime-local" required /></label>
+                      <label>Block ends<input name="end" type="datetime-local" required /></label>
+                      <div className={styles.full}>
+                        <button type="submit" className={styles.primary} disabled={!!busy}>{busy === `block-${room.id}` ? "Scheduling…" : "Schedule block"}</button>
+                      </div>
+                    </form>
+                  </details>
+                )}
               </div>
               {room.published && (
                 <form className={styles.release} onSubmit={(event) => release(event, room)}>

@@ -169,6 +169,7 @@ function BrowseResults() {
   const guestLimit = Math.min(maximumGuests, Math.max(20, draft.guests, ...rooms.map(({ capacity }) => capacity)));
   const guestCounts = Array.from({ length: guestLimit }, (_, index) => index + 1);
   const searchParams = searchQuery(filters, activeCategory);
+  const standbyParams = searchQuery({ ...filters, location: "" }, allSpaces);
 
   function updateSearch(next: Search, nextCategory: string) {
     const query = searchQuery(next, nextCategory);
@@ -243,6 +244,9 @@ function BrowseResults() {
           </div>
           {hasSearch && <button type="button" className="browse-reset" onClick={reset}>Clear filters</button>}
         </div>
+        <p className="browse-standby">
+          Flexible about the venue? <Link href={standbyParams ? `/standby?${standbyParams}` : "/standby"}>Find a room for me <span aria-hidden="true">→</span></Link>
+        </p>
         {loadState === "loading" && <p className="browse-empty" role="status">Finding rooms…</p>}
         {loadState === "error" && (
           <div className="browse-empty">

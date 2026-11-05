@@ -1,9 +1,60 @@
+import json
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 from unittest.mock import patch
 
-from app import main
+from app import main, matching
+
+
+class ClaudeMatchingTests(unittest.TestCase):
+    def test_flexible_request_compares_venues_and_oslo_times_without_internal_ids(self):
+        request = {
+            "id": "request-id", "user_id": "user-id", "preferences": "Prefer Mesh after 16:00",
+            "earliest_start": "2026-10-24T13:00:00Z", "latest_end": "2026-10-25T16:00:00Z",
+        }
+        candidates = [
+            {
+                "room_id": "room-id", "opening_id": "opening-id", "room_name": "Driv",
+                "room_venue": "Mesh at Digs", "room_city": "Trondheim",
+                "start_at": "2026-10-24T14:00:00Z", "end_at": "2026-10-24T14:30:00Z",
+            },
+        ]
+        response = {
+            "stop_reason": "tool_use",
+            "content": [{
+                "type": "tool_use", "name": "propose_match",
+                "input": {"candidate_index": 0, "reason": "Driv is at Mesh and starts at 16:00."},
+            }],
+        }
+        with (
+            patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test-only"}),
+            patch.object(matching, "_send_messages", return_value=response) as send,
+        ):
+            decision = matching.select_match(request, candidates)
+
+        self.assertEqual(decision, matching.MatchDecision(0, "Driv is at Mesh and starts at 16:00.", "claude"))
+        payload = json.loads(send.call_args.args[1]["messages"][0]["content"])
+        self.assertEqual(payload["request"]["latest_end"], "2026-10-25T17:00:00+01:00")
+        self.assertEqual(payload["candidates"][0]["start_at"], "2026-10-24T16:00:00+02:00")
+        self.assertEqual(payload["candidates"][0]["room_venue"], "Mesh at Digs")
+        self.assertEqual(payload["candidates"][0]["room_city"], "Trondheim")
+        self.assertTrue({"id", "user_id"}.isdisjoint(payload["request"]))
+        self.assertTrue({"room_id", "opening_id"}.isdisjoint(payload["candidates"][0]))
+
+    def test_invalid_tool_output_cannot_be_written_as_an_offer(self):
+        for tool_input in (
+            {"candidate_index": 1, "reason": "Out of range"},
+            {"candidate_index": 0, "reason": "Bad\0reason"},
+            {"candidate_index": 0, "reason": "Bad\ud800reason"},
+            {"candidate_index": 0, "reason": "Extra input", "price_ore": 1},
+        ):
+            response = {
+                "stop_reason": "tool_use",
+                "content": [{"type": "tool_use", "name": "propose_match", "input": tool_input}],
+            }
+            with self.subTest(tool_input=tool_input), self.assertRaises(matching.MatchingUnavailable):
+                matching._parse_decision(response, 1)
 
 
 class ConcurrentMatchingTests(unittest.TestCase):

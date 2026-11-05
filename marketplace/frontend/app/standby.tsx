@@ -60,7 +60,7 @@ function describeWindow(start: string, end: string) {
 const requestPath = (id: string) => `standby-requests/${encodeURIComponent(id)}`;
 
 type StandbyProps = {
-  room: Room; requestId?: never; searchDate?: string; guests?: number; browseQuery?: string;
+  room?: Room; requestId?: never; searchDate?: string; guests?: number; browseQuery?: string;
 } | {
   requestId: string; room?: never; searchDate?: never; guests?: never; browseQuery?: never;
 };
@@ -70,15 +70,17 @@ export default function Standby(props: StandbyProps) {
   const query = new URLSearchParams(props.browseQuery);
   if (props.searchDate) query.set("date", props.searchDate);
   if (props.guests) query.set("guests", String(props.guests));
-  const returnTo = props.room
-    ? `/rooms/${encodeURIComponent(props.room.id)}${query.size ? `?${query}` : ""}`
-    : `/bookings/${encodeURIComponent(props.requestId)}`;
+  const requestTitle = props.room ? "Request this room" : "Tell us what you need";
+  const entryPath = props.room ? `/rooms/${encodeURIComponent(props.room.id)}` : "/standby";
+  const returnTo = props.requestId
+    ? `/bookings/${encodeURIComponent(props.requestId)}`
+    : `${entryPath}${query.size ? `?${query}` : ""}`;
 
   if (loading) return <p className="status-note" role="status">Checking your account…</p>;
   if (!account) {
     return (
       <section className="room-access">
-        <h2>{props.room ? "Request this room" : "View your booking"}</h2>
+        <h2>{props.requestId ? "View your booking" : requestTitle}</h2>
         <p>Use your renter account to send requests and manage bookings.</p>
         <Link className="button primary" href={`/sign-in?next=${encodeURIComponent(returnTo)}`}>Sign in to continue <span aria-hidden="true">→</span></Link>
         <Link className="room-back" href={`/register?next=${encodeURIComponent(returnTo)}`}>Create a renter account</Link>
@@ -88,7 +90,7 @@ export default function Standby(props: StandbyProps) {
   if (account.role !== "renter") {
     return (
       <section className="room-access">
-        <h2>{props.room ? "Request this room" : "View your booking"}</h2>
+        <h2>{props.requestId ? "View your booking" : requestTitle}</h2>
         <p>Room requests are available to renter accounts.</p>
         <Link className="button secondary" href="/host">Open host dashboard</Link>
       </section>
@@ -177,7 +179,7 @@ function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!room || busy || request) return;
+    if (requestId || busy || request) return;
     const data = new FormData(event.currentTarget);
     const start = new Date(earliest);
     const end = new Date(latest);
@@ -193,7 +195,7 @@ function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          room_id: room.id,
+          room_id: room?.id ?? null,
           earliest_start: start.toISOString(),
           latest_end: end.toISOString(),
           duration_minutes: duration,
@@ -261,7 +263,7 @@ function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
     <div className={requestId ? "booking-grid" : "booking-grid booking-create"}>
       <section className="panel request-panel" aria-labelledby="request-title">
         <div className="panel-heading">
-          <h2 id="request-title">{request ? "Your request" : "Request this room"}</h2>
+          <h2 id="request-title">{request ? "Your request" : room ? "Request this room" : "Tell us what you need"}</h2>
           {!request && <p>Choose a time window and a budget for your meeting.</p>}
         </div>
         {request ? (
@@ -274,7 +276,7 @@ function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
               {request.equipment.length > 0 && <div><dt>Equipment</dt><dd>{request.equipment.join(", ")}</dd></div>}
               {request.preferences && <div><dt>Preferences</dt><dd>{request.preferences}</dd></div>}
             </dl>
-            {requestId && <Link className="button secondary" href={request.room_id ? `/rooms/${encodeURIComponent(request.room_id)}` : "/"}>Start a new request</Link>}
+            {requestId && <Link className="button secondary" href={request.room_id ? `/rooms/${encodeURIComponent(request.room_id)}` : "/standby"}>Start a new request</Link>}
           </div>
         ) : (
         <form onSubmit={submit}>
@@ -298,16 +300,16 @@ function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
               </label>
               <label>
                 People
-                <input type="number" name="party" defaultValue={Math.min(guests ?? 4, room?.capacity ?? 4)} min="1" max={room?.capacity ?? 50} required />
+                <input type="number" name="party" defaultValue={Math.min(guests ?? 4, room?.capacity ?? 100)} min="1" max={room?.capacity ?? 100} required />
               </label>
               <label>
                 Max total price <span className="unit">NOK</span>
                 <input type="number" name="budget" defaultValue={Math.ceil((room?.hourly_rate_ore ?? 50000) / 100)} min="1" max="100000" required />
               </label>
-              {room?.equipment.includes("screen") && (
+              {(!room || room.equipment.includes("screen")) && (
                 <label className="equipment">
                   <span>Equipment</span>
-                  <span className="equipment-option"><input name="equipment" type="checkbox" value="screen" defaultChecked /> Screen required</span>
+                  <span className="equipment-option"><input name="equipment" type="checkbox" value="screen" defaultChecked={!!room} /> Screen required</span>
                 </label>
               )}
               <label className="form-wide">
@@ -385,7 +387,7 @@ function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
         {demoEnabled && status === "waiting" && (
           <div className="demo">
             <strong>Demo controls</strong>
-            <p>Simulate the host releasing an opening for this room.</p>
+            <p>{request?.room_id ? "Simulate the host releasing an opening for this room." : "Simulate a release at the demo venue."}</p>
             <button type="button" className="button secondary" onClick={release} disabled={!!busy}>
               {busy === "release" ? "Releasing…" : "Release demo room"}
             </button>

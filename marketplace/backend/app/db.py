@@ -26,7 +26,7 @@ _OSLO = ZoneInfo("Europe/Oslo")
 _ROOM_COLUMNS = "id, name, city, venue_name AS venue, kind, description, image_key, capacity, equipment, hourly_rate_ore"
 _OPENING_COLUMNS = """
     o.id AS opening_id, o.room_id, r.venue, o.start_at AS opening_start, o.end_at AS opening_end,
-    r.name AS room_name, r.city AS room_city, r.capacity, r.equipment, r.published,
+    r.name AS room_name, r.venue_name AS room_venue, r.city AS room_city, r.capacity, r.equipment, r.published,
     r.hourly_rate_ore, r.minimum_hourly_rate_ore, r.maximum_hourly_rate_ore
 """
 
@@ -265,11 +265,6 @@ def _existing_opening(connection, event):
 
 
 def record_release(event: dict) -> dict:
-    released_at = _datetime(event["released_at"])
-    end_at = _datetime(event["scheduled_end_at"])
-    turnaround = int(os.getenv("MARKETPLACE_TURNAROUND_MINUTES", "2"))
-    if turnaround < 0:
-        raise RuntimeError("Turnaround cannot be negative")
     with _connect() as connection:
         room = connection.execute(
             "SELECT id, published FROM marketplace_rooms WHERE id = %s FOR UPDATE",
@@ -279,46 +274,192 @@ def record_release(event: dict) -> dict:
             return {"created": False, "opening_id": None, "reason": "unknown_room"}
         if event["source"] == "host" and not room["published"]:
             return {"created": False, "opening_id": None, "reason": "room_unpublished"}
+        return _record_release(connection, event, datetime.now(UTC))
 
-        previous = _existing_opening(connection, event)
-        if previous:
-            return {"created": False, "opening_id": str(previous["id"]), "reason": "duplicate_release"}
+
+def _valid_release_time(released_at, now):
+    return now - timedelta(minutes=10) <= released_at <= now + timedelta(seconds=30)
+
+
+def _record_release(connection, event, now):
+    room_id = event["external_room_id"]
+    previous = _existing_opening(connection, event)
+    if previous:
+        return {"created": False, "opening_id": str(previous["id"]), "reason": "duplicate_release"}
+
+    released_at = _datetime(event["released_at"])
+    end_at = _datetime(event["scheduled_end_at"])
+    turnaround = int(os.getenv("MARKETPLACE_TURNAROUND_MINUTES", "2"))
+    if turnaround < 0:
+        raise RuntimeError("Turnaround cannot be negative")
+    if not _valid_release_time(released_at, now):
+        return {"created": False, "opening_id": None, "reason": "invalid_release_time"}
+    start_at = max(released_at + timedelta(minutes=turnaround), now)
+    if start_at >= end_at:
+        return {"created": False, "opening_id": None, "reason": "no_remaining_time"}
+
+    latest = connection.execute(
+        """
+        SELECT max(released_at) AS released_at FROM marketplace_openings
+        WHERE room_id = %s AND source = %s
+        """,
+        (room_id, event["source"]),
+    ).fetchone()["released_at"]
+    if latest and released_at < latest:
+        return {"created": False, "opening_id": None, "reason": "stale_release"}
+
+    opening = connection.execute(
+        """
+        INSERT INTO marketplace_openings
+            (id, room_id, source, event_id, block_id, released_at, start_at, end_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT DO NOTHING RETURNING id
+        """,
+        (uuid4(), room_id, event["source"], event["event_id"], event["block_id"], released_at, start_at, end_at),
+    ).fetchone()
+    if opening:
+        return {"created": True, "opening_id": str(opening["id"])}
+    previous = _existing_opening(connection, event)
+    return {
+        "created": False,
+        "opening_id": str(previous["id"]) if previous else None,
+        "reason": "duplicate_release",
+    }
+
+
+def schedule_device_block(room_id: str, starts_at: datetime, ends_at: datetime, *, owner_id: UUID | None = None) -> dict:
+    starts_at, ends_at = _datetime(starts_at), _datetime(ends_at)
+    with _connect() as connection:
+        room = connection.execute(
+            """
+            SELECT published, owner_id FROM marketplace_rooms WHERE id = %s FOR UPDATE
+            """,
+            (room_id,),
+        ).fetchone()
+        if not room or (owner_id is not None and owner_id != room["owner_id"]):
+            raise NotFound("Listing not found")
+        if not room["published"]:
+            raise Conflict("Publish this listing before scheduling a device block")
 
         now = datetime.now(UTC)
-        if released_at < now - timedelta(minutes=10) or released_at > now + timedelta(seconds=30):
-            return {"created": False, "opening_id": None, "reason": "invalid_release_time"}
-        start_at = max(released_at + timedelta(minutes=turnaround), now)
-        if start_at >= end_at:
-            return {"created": False, "opening_id": None, "reason": "no_remaining_time"}
-
-        latest = connection.execute(
+        if starts_at >= ends_at or ends_at <= now:
+            raise ValueError("The block must end after its start and in the future")
+        blocks = connection.execute(
             """
-            SELECT max(released_at) AS released_at FROM marketplace_openings
-            WHERE room_id = %s AND source = %s
+            SELECT id, start_at, end_at FROM marketplace_device_blocks
+            WHERE room_id = %s AND start_at < %s AND end_at > %s
             """,
-            (room["id"], event["source"]),
-        ).fetchone()["released_at"]
-        if latest and released_at < latest:
-            return {"created": False, "opening_id": None, "reason": "stale_release"}
+            (room_id, ends_at, starts_at),
+        ).fetchall()
+        if blocks:
+            block = blocks[0]
+            if block["start_at"] == starts_at and block["end_at"] == ends_at:
+                return _json(block)
+            raise Conflict("The block overlaps another scheduled block")
+        if _busy(connection, room_id, starts_at, ends_at, now):
+            raise Conflict("The block overlaps a booking or a room hold")
 
-        opening = connection.execute(
+        block = connection.execute(
             """
-            INSERT INTO marketplace_openings
-                (id, room_id, source, event_id, block_id, released_at, start_at, end_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT DO NOTHING RETURNING id
+            INSERT INTO marketplace_device_blocks (id, room_id, start_at, end_at, created_at)
+            VALUES (%s, %s, %s, %s, %s) RETURNING id, start_at, end_at
             """,
-            (uuid4(), room["id"], event["source"], event["event_id"], event["block_id"],
-             released_at, start_at, end_at),
+            (uuid4(), room_id, starts_at, ends_at, now),
         ).fetchone()
-        if opening:
-            return {"created": True, "opening_id": str(opening["id"])}
-        previous = _existing_opening(connection, event)
-        return {
-            "created": False,
-            "opening_id": str(previous["id"]) if previous else None,
-            "reason": "duplicate_release",
-        }
+        return _json(block)
+
+
+def _remember_device_event(connection, event, kind):
+    return connection.execute(
+        """
+        INSERT INTO marketplace_device_events (source, event_id, room_id, kind)
+        VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING RETURNING event_id
+        """,
+        (event["source"], event["event_id"], event["external_room_id"], kind),
+    ).fetchone() is not None
+
+
+def record_occupancy(event: dict) -> dict:
+    changed_at = _datetime(event["changed_at"])
+    room_id = event["external_room_id"]
+    with _connect() as connection:
+        if not connection.execute(
+            "SELECT 1 FROM marketplace_rooms WHERE id = %s FOR UPDATE", (room_id,),
+        ).fetchone():
+            return {"created": False, "reason": "unknown_room"}
+        if not _remember_device_event(connection, event, "occupancy_changed"):
+            return {"created": False, "reason": "duplicate_event"}
+        if changed_at > datetime.now(UTC) + timedelta(seconds=30):
+            return {"created": False, "reason": "invalid_occupancy_time"}
+        updated = connection.execute(
+            """
+            INSERT INTO marketplace_room_occupancy (room_id, occupied, changed_at, source, event_id)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (room_id) DO UPDATE SET occupied = EXCLUDED.occupied,
+                changed_at = EXCLUDED.changed_at, source = EXCLUDED.source, event_id = EXCLUDED.event_id
+            WHERE EXCLUDED.changed_at > marketplace_room_occupancy.changed_at
+            RETURNING room_id
+            """,
+            (room_id, event["occupied"], changed_at, event["source"], event["event_id"]),
+        ).fetchone()
+        return {"created": False, "reason": "occupancy_recorded" if updated else "stale_occupancy"}
+
+
+def record_release_request(event: dict) -> dict:
+    requested_at = _datetime(event["requested_at"])
+    room_id = event["external_room_id"]
+    with _connect() as connection:
+        room = connection.execute(
+            "SELECT published FROM marketplace_rooms WHERE id = %s FOR UPDATE", (room_id,),
+        ).fetchone()
+        if not room:
+            return {"created": False, "reason": "unknown_room"}
+        if not _remember_device_event(connection, event, "release_requested"):
+            previous = connection.execute(
+                """
+                SELECT opening_id FROM marketplace_device_events
+                WHERE source = %s AND event_id = %s AND room_id = %s AND kind = 'release_requested'
+                """,
+                (event["source"], event["event_id"], room_id),
+            ).fetchone()
+            opening_id = previous["opening_id"] if previous else None
+            return {"created": False, "opening_id": str(opening_id) if opening_id else None, "reason": "duplicate_event"}
+        if not room["published"]:
+            return {"created": False, "reason": "room_unpublished"}
+
+        now = datetime.now(UTC)
+        if not _valid_release_time(requested_at, now):
+            return {"created": False, "reason": "invalid_release_time"}
+        block = connection.execute(
+            """
+            SELECT id, end_at, opening_id FROM marketplace_device_blocks
+            WHERE room_id = %s AND start_at <= LEAST(%s, %s) AND end_at > GREATEST(%s, %s)
+              AND created_at <= %s
+            """,
+            (room_id, requested_at, now, requested_at, now, requested_at),
+        ).fetchone()
+        if not block:
+            return {"created": False, "reason": "no_active_block"}
+        if block["opening_id"]:
+            result = {"created": False, "opening_id": str(block["opening_id"]), "reason": "duplicate_release"}
+        else:
+            result = _record_release(connection, {
+                **event,
+                "block_id": str(block["id"]),
+                "released_at": requested_at,
+                "scheduled_end_at": block["end_at"],
+            }, now)
+            if result["created"]:
+                connection.execute(
+                    "UPDATE marketplace_device_blocks SET opening_id = %s WHERE id = %s",
+                    (result["opening_id"], block["id"]),
+                )
+        if result.get("opening_id"):
+            connection.execute(
+                "UPDATE marketplace_device_events SET opening_id = %s WHERE source = %s AND event_id = %s",
+                (result["opening_id"], event["source"], event["event_id"]),
+            )
+        return result
 
 
 def _quote(room, minutes, start_at, now) -> PriceQuote:
@@ -339,9 +480,14 @@ def _busy(connection, room_id, start_at, end_at, now, exclude=None):
         WHERE room_id = %s AND start_at < %s AND end_at > %s
           AND (confirmed_at IS NOT NULL OR expires_at > %s)
           AND id IS DISTINCT FROM %s::uuid
+        UNION ALL
+        SELECT b.start_at, COALESCE(o.start_at, b.end_at) AS end_at
+        FROM marketplace_device_blocks b
+        LEFT JOIN marketplace_openings o ON o.id = b.opening_id
+        WHERE b.room_id = %s AND b.start_at < %s AND COALESCE(o.start_at, b.end_at) > %s
         ORDER BY start_at
         """,
-        (room_id, end_at, start_at, now, exclude),
+        (room_id, end_at, start_at, now, exclude, room_id, end_at, start_at),
     ).fetchall()
 
 
@@ -367,7 +513,9 @@ def _candidate(opening, request, start_at, end_at, now):
     if price > request["max_price_ore"]:
         return None
     return _json({
-        **{key: opening[key] for key in ("opening_id", "room_id", "room_name", "capacity", "equipment")},
+        **{key: opening[key] for key in (
+            "opening_id", "room_id", "room_name", "room_venue", "room_city", "capacity", "equipment",
+        )},
         "start_at": start_at,
         "end_at": end_at,
         "price_ore": price,

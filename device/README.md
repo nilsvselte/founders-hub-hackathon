@@ -86,7 +86,7 @@ It sends this event when staff press the release button:
  "requested_at": "2026-11-05T17:02:10+01:00"}
 ```
 
-The device server cannot send `room.released`, because it does not know the booking's `block_id` or `scheduled_end_at`. The marketplace maps `room.release_requested` to the current block and decides whether to release it. Failed sends are retried with the same `event_id`, so the marketplace can deduplicate. The current `FixtureDeviceAdapter` returns `None` for these types, so the existing endpoint accepts them without breaking until the marketplace handles them.
+The marketplace records occupancy as last reported and maps `room.release_requested` to the host's active scheduled block. The device server timestamps the events when it observes them. Failed sends are retried with the same `event_id`, so the marketplace can deduplicate. See [marketplace setup](../marketplace/README.md#connect-a-device) to schedule a block and run a release.
 
 ## Run the device server
 

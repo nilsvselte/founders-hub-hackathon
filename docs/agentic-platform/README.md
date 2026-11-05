@@ -12,8 +12,8 @@ Agents choose and explain; the marketplace decides. Availability, price limits, 
 
 The first agent flow, live in the marketplace today:
 
-1. When a room is ready, a staff member presses **Release room** on an Atech device. The marketplace makes the remaining time available after a turnaround buffer.
-2. A buyer leaves a standby request: time window, duration, group size, equipment needs, budget, and any flexibility. A Claude agent checks available slots and matches the request to a room as openings come in.
+1. The host schedules the room's occupied block. When staff press **Release room** on the Atech device during that block, the marketplace makes the remaining time available after a turnaround buffer.
+2. A buyer leaves a standby request for one room or lets standbyroom look across venues. The request includes a time window, duration, group size, equipment needs, budget, and any flexibility. The marketplace checks available slots as openings come in.
 3. The marketplace calculates a quote within the room's pricing limits and holds the slot. The renter accepts the quote, and the marketplace rechecks availability before confirming the booking. If the slot disappears, the agent looks for the next viable option.
 
 The backend first filters openings down to the ones that fit. Claude then sees only those validated options (room, time, price, capacity, equipment; no database IDs) and calls one of two tools: `propose_match` (pick one, explain the fit in a sentence) or `no_match`. Without an API key, demo mode uses a deterministic matcher instead.
@@ -43,13 +43,9 @@ The marketplace is open to agents other than its own:
 
 ### Sensor and occupancy data
 
-Atech boards in each room report presence to the device server, which exposes occupancy to the marketplace (contract: [device/README.md](../../device/README.md)). Agents use it to:
+Atech boards report presence through the [device server](../../device/README.md). The host dashboard shows the last reported occupancy and when it changed. An explicit staff release can open the remaining time on a scheduled room block.
 
-- learn about openings the moment a room empties or staff press **Release room**, instead of waiting for the booked block to end;
-- spot ghost bookings: a booked room that stays empty can be released and offered on;
-- trust a suggestion: an agent can say a room is free now, not just free on paper.
-
-The device server reports facts; the marketplace decides what they mean for bookings.
+**Planned:** use the device server's presence history and coverage to flag possible no-shows. Occupancy alone does not alter a booking.
 
 ### Dynamic prices
 

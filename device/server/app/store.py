@@ -117,10 +117,10 @@ class Store:
 
     # ---- helpers -------------------------------------------------------
 
-    def iso(self, ts: float | None) -> str | None:
+    def iso(self, ts: float | None, *, timespec: str = "seconds") -> str | None:
         if ts is None:
             return None
-        return datetime.fromtimestamp(ts, self.settings.timezone).isoformat(timespec="seconds")
+        return datetime.fromtimestamp(ts, self.settings.timezone).isoformat(timespec=timespec)
 
     def _enqueue(self, payload: dict, now: float) -> None:
         self._db.execute(
@@ -144,7 +144,8 @@ class Store:
                 "event_id": str(uuid.uuid4()),
                 "external_room_id": room_id,
                 "occupied": occupied,
-                "changed_at": self.iso(at),
+                # The webhook orders observations, even when local presence is backdated.
+                "changed_at": self.iso(now, timespec="microseconds"),
             },
             now,
         )
@@ -228,7 +229,7 @@ class Store:
                             "type": "room.release_requested",
                             "event_id": str(uuid.uuid4()),
                             "external_room_id": room_id,
-                            "requested_at": self.iso(now),
+                            "requested_at": self.iso(now, timespec="microseconds"),
                         },
                         now,
                     )
@@ -367,7 +368,7 @@ class Store:
             self._db.execute("UPDATE outbox SET sent_at = ?, last_error = NULL WHERE event_id = ?", (now, event_id))
 
     def mark_failed(self, event_id: str, attempts: int, error: str, now: float) -> None:
-        backoff = min(60.0, 2.0 ** attempts)
+        backoff = min(60.0, 2.0 ** min(attempts, 6))
         with self._lock:
             self._db.execute(
                 "UPDATE outbox SET attempts = ?, next_attempt_at = ?, last_error = ? WHERE event_id = ?",

@@ -71,6 +71,7 @@ def test_room_turns_occupied_then_empty(env):
     changes = [e["payload"] for e in reversed(store.outbox()) if e["payload"]["type"] == "room.occupancy_changed"]
     assert [c["occupied"] for c in changes] == [True, False]
     assert all(c["external_room_id"] == "digs-demo-1" for c in changes)
+    assert [datetime.fromisoformat(c["changed_at"]).timestamp() for c in changes] == [left_at, clock.t]
 
 
 def test_without_baseline_near_zones_count_as_presence(env):
@@ -96,10 +97,20 @@ def test_calibrate_needs_a_frame(env):
 
 def test_release_button_queues_event(env):
     client, store, clock = env
-    send(client, clock, EMPTY, buttons={"release": 1})
+    send(client, clock, EMPTY, advance=3.25, buttons={"release": 1})
     events = [e["payload"] for e in store.outbox()]
     assert events[0]["type"] == "room.release_requested"
     assert events[0]["external_room_id"] == "digs-demo-1"
+    assert datetime.fromisoformat(events[0]["requested_at"]).timestamp() == clock.t
+
+
+def test_outbox_still_retries_after_a_prolonged_outage(env):
+    client, store, clock = env
+    send(client, clock, EMPTY, buttons={"release": 1})
+    event_id, payload, _ = store.due_events(clock.t)[0]
+    store.mark_failed(event_id, 1024, "Unavailable", clock.t)
+    assert store.due_events(clock.t + 59) == []
+    assert store.due_events(clock.t + 60) == [(event_id, payload, 1025)]
 
 
 def test_reading_without_tof_keeps_state(env):

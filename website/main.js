@@ -1,11 +1,26 @@
 // Product name lives here. Change it once and every [data-product] element and the tab title follow.
 const PRODUCT_NAME = 'standbyroom';
 
-// The marketplace app every "Open standbyroom" button points to ([data-marketplace]).
-const MARKETPLACE_URL = 'http://localhost:3000';
+// For hosted sites, set data-marketplace-origin on the main.js script tag to the marketplace's public origin.
+function marketplaceOrigin(value) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return ['https:', 'http:'].includes(url.protocol) ? url.origin : null;
+  } catch {
+    return null;
+  }
+}
+
+const marketOrigin = marketplaceOrigin(document.currentScript?.dataset.marketplaceOrigin);
+if (marketOrigin) {
+  document.querySelectorAll('[data-marketplace]').forEach(link => {
+    const { pathname, search, hash } = new URL(link.href);
+    link.href = new URL(pathname + search + hash, marketOrigin).href;
+  });
+}
 
 document.title = PRODUCT_NAME;
-document.querySelectorAll('[data-marketplace]').forEach(el => { el.href = MARKETPLACE_URL; });
 document.querySelectorAll('[data-product]').forEach(el => { el.textContent = PRODUCT_NAME; });
 
 // Hero board lives in board.js (data in board-data.js).
