@@ -87,7 +87,7 @@ export default function PreferencesPage() {
     <main className={styles.page}>
       <p className="identity-kicker">Your account</p>
       <h1 className={styles.title}>Your preferences</h1>
-      <p className={styles.intro}>The booking agent uses these to pick rooms for meetings in your calendar.</p>
+      <p className={styles.intro}>The booking agent uses these to pick rooms for meetings in your calendar. <Link href="/account/notifications">Notification settings</Link></p>
       {loading ? <p className={styles.state} role="status">Checking your account…</p> : !account ? (
         <p className={styles.state}><Link className="identity-primary" href="/sign-in?next=%2Faccount%2Fpreferences">Sign in to set your preferences</Link></p>
       ) : account.role === "host" ? (

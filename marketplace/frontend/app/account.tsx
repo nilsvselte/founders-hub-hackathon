@@ -117,7 +117,9 @@ export function MarketHeader() {
                   {accountIcon}{account.name.trim().split(/\s+/)[0]}
                 </Link>
               ) : (
-                <span className="market-user" title={account.name}>{accountIcon}{account.name.trim().split(/\s+/)[0]}</span>
+                <Link className="market-user" href="/account/notifications" title="Notifications" aria-current={pathname.startsWith("/account") ? "page" : undefined}>
+                  {accountIcon}{account.name.trim().split(/\s+/)[0]}
+                </Link>
               )}
               <button className="market-signout" type="button" onClick={() => void signOut()} disabled={signingOut}>
                 {signingOut ? "Signing out…" : "Sign out"}
