@@ -596,3 +596,9 @@ fieldset { min-width: 0; padding: 0; border: 0; margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+.room-venue-note { margin-top: 22px; padding: 14px 16px; border-radius: 10px; background: var(--soft); }
+.room-venue-note h3 { color: var(--accent); font-size: 12px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.room-venue-note p { margin-top: 5px; }
+.room-venue-note a { display: inline-block; margin-top: 8px; color: var(--accent); font-size: 13px; font-weight: 700; text-decoration: none; }
+.room-venue-note a:hover { text-decoration: underline; }

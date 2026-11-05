@@ -1,0 +1,73 @@
+.page { width: var(--shell); margin-inline: auto; padding-bottom: 72px; }
+
+.hero { padding-block: clamp(40px, 6vw, 72px) clamp(20px, 3vw, 32px); border-bottom: 1px solid var(--line); }
+.hero h1 {
+  max-width: 14ch;
+  margin-top: 11px;
+  font: 400 clamp(40px, 6.4vw, 80px)/.98 var(--serif);
+  letter-spacing: -.065em;
+  text-wrap: balance;
+}
+.hero > p:not(:first-child) { max-width: 60ch; margin-top: 14px; color: var(--muted); font-size: clamp(14px, 1.4vw, 16px); }
+.jump { display: flex; gap: 10px; margin-top: 20px; }
+.jump a {
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+}
+.jump a:hover { border-color: var(--accent); color: var(--accent); }
+
+.venue { padding-block: clamp(32px, 5vw, 56px); border-bottom: 1px solid var(--line); scroll-margin-top: 16px; }
+.venueHead { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(20px, 3.5vw, 44px); align-items: start; }
+.venuePhoto { overflow: hidden; border-radius: 11px; background: var(--peach); }
+.venuePhoto img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.venueIntro h2 { font: 400 clamp(34px, 4.6vw, 56px)/1 var(--serif); letter-spacing: -.06em; }
+.address { margin-top: 6px; color: var(--accent); font-size: 13px; font-weight: 650; }
+.venueIntro > p:not(.address) { margin-top: 12px; color: var(--muted); }
+
+.today { margin-top: 18px; padding: 14px 16px; border-radius: 10px; background: var(--soft); }
+.today strong { display: block; font-size: 12px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.today p { margin-top: 5px; }
+
+.lists { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 18px; }
+.lists h3, .roomsHeading { font-size: 12px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.lists ul { margin: 6px 0 0; padding-left: 18px; font-size: 14px; }
+.lists li + li { margin-top: 3px; }
+
+.roomsHeading { margin-top: clamp(26px, 4vw, 40px); }
+.rooms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 12px; }
+.room { display: flex; flex-direction: column; gap: 8px; padding: 18px; border: 1px solid var(--line); border-radius: 11px; background: var(--paper); }
+.roomTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.roomKind { color: var(--accent); font-size: 11px; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; }
+.room h4 { margin: 2px 0 0; font: 400 clamp(22px, 2.2vw, 28px)/1.1 var(--serif); letter-spacing: -.05em; }
+.roomPrice { font-weight: 750; white-space: nowrap; text-align: right; }
+.roomPrice span { display: block; color: var(--muted); font-size: 11px; font-weight: 500; }
+.roomMeta { color: var(--muted); font-size: 13px; }
+.stated, .inferred { font-size: 14px; }
+.stated span, .inferred span {
+  display: inline-block;
+  margin-right: 7px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 750;
+  vertical-align: .1em;
+}
+.stated span { background: var(--peach); color: var(--accent-dark); }
+.inferred span { background: var(--soft); color: var(--muted); }
+.roomLink { margin-top: auto; padding-top: 6px; color: var(--accent); font-size: 13px; font-weight: 700; text-decoration: none; }
+.roomLink:hover { text-decoration: underline; }
+
+.footer { margin-top: 18px; color: var(--muted); font-size: 12px; }
+.footer p + p { margin-top: 4px; }
+.footer strong { color: var(--ink); font-weight: 650; }
+
+@media (max-width: 860px) {
+  .venueHead, .rooms { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .lists { grid-template-columns: 1fr; }
+}

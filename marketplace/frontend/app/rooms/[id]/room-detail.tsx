@@ -7,11 +7,13 @@ import { api, money, photo } from "../../market";
 import type { Room } from "../../market";
 import QuotePreview from "../../quote-preview";
 import Standby from "../../standby";
+import { factsForVenue } from "../../venue-facts";
 
 export default function RoomDetail({ roomId }: { roomId: string }) {
   const [room, setRoom] = useState<Room | null>(null);
   const [failed, setFailed] = useState(false);
   const roomPhoto = photo(room?.image_key);
+  const venue = room ? factsForVenue(room.venue) : undefined;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -65,6 +67,13 @@ export default function RoomDetail({ roomId }: { roomId: string }) {
                     {room.equipment.map((item) => <li key={item}>{item}</li>)}
                   </ul>
                 </>
+              )}
+              {venue && (
+                <div className="room-venue-note">
+                  <h3>How it’s booked today</h3>
+                  <p>{venue.bookedToday}</p>
+                  <Link href={`/venues#${venue.id}`}>More about {venue.name} <span aria-hidden="true">→</span></Link>
+                </div>
               )}
               <QuotePreview room={room} />
             </section>

@@ -46,7 +46,7 @@ export function money(ore: number) {
 }
 
 const roomPhotos = new Set(["digs-driv", "brighten-meeting-room", "kowork-meeting-room"]);
-const venuePhotos = new Set(["digs-gnist-spark"]);
+const venuePhotos = new Set(["digs-gnist-spark", "kowork-venue", "brighten-venue"]);
 
 export function photo(imageKey: string | null | undefined) {
   const key = imageKey?.replace(/\.webp$/, "");
