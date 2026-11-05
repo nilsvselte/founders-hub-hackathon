@@ -17,6 +17,7 @@ const brandGlyphs: Record<string, string> = {
 // Venue photos shown in the hero. Venues without one get the drawn room plan.
 const heroPhotos: Record<string, { src: string; alt: string }> = {
   brighten: { src: "/venues/brighten.webp", alt: "Brighten's glass-walled meeting room on Bakklandet" },
+  kowork: { src: "/venues/kowork.webp", alt: "Kowork's bright café and kitchen at Kjøpmannsgata 40" },
 };
 
 const apiUrl = (process.env.MARKETPLACE_API_URL ?? "http://127.0.0.1:8000").replace(/\/+$/, "");
