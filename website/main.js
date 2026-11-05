@@ -16,7 +16,8 @@ function marketplaceOrigin(value) {
 // (localhost or the Tailscale IP), so phones and other laptops on the tailnet reach both.
 const demoOrigin = location.port === '8080' ? `${location.protocol}//${location.hostname}:3000` : null;
 // The demo Mac keeps its local marketplace; everywhere else uses the hosted one.
-const marketOrigin = demoOrigin || marketplaceOrigin(document.currentScript?.dataset.marketplaceOrigin);
+const configuredOrigin = document.currentScript?.dataset.marketplaceOrigin;
+const marketOrigin = configuredOrigin === 'same-origin' ? null : demoOrigin || marketplaceOrigin(configuredOrigin);
 if (marketOrigin) {
   document.querySelectorAll('[data-marketplace]').forEach(element => {
     const property = element.localName === 'form' ? 'action' : 'href';

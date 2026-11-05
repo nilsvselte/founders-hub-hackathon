@@ -1,6 +1,6 @@
 # Deploy the marketplace
 
-Deploy the Next.js app to Vercel. Run FastAPI on a separate container host with PostgreSQL so the existing Uvicorn process can finish background matching after it sends the response. The browser uses the Next.js `/api/*` rewrite on the frontend origin. Its session cookie does not need a shared domain with the API.
+Deploy the Next.js app to Vercel. The marketplace serves room browsing at `/` and the landing page at `/welcome`. Run `node marketplace/frontend/scripts/sync-landing.mjs` after editing `website/` to refresh the committed bundle used by frontend-only deployments. Run FastAPI on a separate container host with PostgreSQL so the existing Uvicorn process can finish background matching after it sends the response. The browser uses the Next.js `/api/*` rewrite on the frontend origin. Its session cookie does not need a shared domain with the API.
 
 ## Start a test API
 
