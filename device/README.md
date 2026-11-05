@@ -88,6 +88,18 @@ It sends this event when staff press the release button:
 
 The marketplace records occupancy as last reported and maps `room.release_requested` to the host's active scheduled block. The device server timestamps the events when it observes them. Failed sends are retried with the same `event_id`, so the marketplace can deduplicate. See [marketplace setup](../marketplace/README.md#connect-a-device) to schedule a block and run a release.
 
+## Hosted
+
+Everything runs on the team's rpi5 behind Cloudflare Tunnel, as user systemd services:
+
+| Service | URL | Port |
+| --- | --- | --- |
+| Device server | `https://device.standbyroom.com` | 8012 |
+| Marketplace API | `https://api.standbyroom.com` | 8013 |
+| Marketplace frontend | `https://app.standbyroom.com` | 8014 |
+
+The device server pushes to the marketplace API locally on the Pi (`MARKETPLACE_URL=http://127.0.0.1:8013`). Boards post to `https://device.standbyroom.com/v1/telemetry`, so they only need internet access, not the same network as a laptop.
+
 ## Run the device server
 
 Use Python 3.12 or newer with uv. Run these from `device/server/`.

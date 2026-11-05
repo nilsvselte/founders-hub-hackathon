@@ -30,8 +30,8 @@ const input = hasSource ? source : target;
 const assets = await Promise.all([...files].map(async (file) => {
   const path = new URL(file, input);
   if (!(await lstat(path)).isFile()) throw new Error(`Welcome asset must be a regular file: ${file}`);
-  const contents = await readFile(path);
-  return [file, file.endsWith(".html") ? sameOriginPage(contents.toString("utf8")) : contents];
+  const contents = file.endsWith(".png") ? await readFile(path) : await readFile(path, "utf8");
+  return [file, file.endsWith(".html") ? sameOriginPage(contents) : contents];
 }));
 
 if (hasSource) {
