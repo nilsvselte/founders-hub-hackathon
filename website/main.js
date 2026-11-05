@@ -1,7 +1,11 @@
 // Product name lives here. Change it once and every [data-product] element and the tab title follow.
-const PRODUCT_NAME = 'Mesh standby';
+const PRODUCT_NAME = 'Ledig';
+
+// The marketplace app every "Open Ledig" button points to ([data-marketplace]).
+const MARKETPLACE_URL = 'http://localhost:3000';
 
 document.title = PRODUCT_NAME;
+document.querySelectorAll('[data-marketplace]').forEach(el => { el.href = MARKETPLACE_URL; });
 document.querySelectorAll('[data-product]').forEach(el => { el.textContent = PRODUCT_NAME; });
 
 // Hero board lives in board.js (data in board-data.js).

@@ -11,6 +11,8 @@
   const resetBtn = document.getElementById('reset');
   const status = document.getElementById('agent-status');
   const more = document.getElementById('more');
+  const sumBtn = document.getElementById('prefs-sum');
+  const sumText = document.getElementById('prefs-sum-text');
   if (!D || !root || !form || !list) return;
 
   const SHOW = 4;
@@ -192,8 +194,10 @@
   }
 
   let debounce = null;
+  function paintSummary() { if (sumText && prefs) sumText.textContent = summary(prefs); }
   function onChange() {
     prefs = readForm();
+    paintSummary();
     clearTimeout(debounce);
     debounce = setTimeout(rerank, 180);
   }
@@ -277,6 +281,7 @@
     released = null; booked = false;
     writeForm(D.defaults);
     prefs = readForm();
+    paintSummary();
     list.innerHTML = '';
     log.innerHTML = '';
     line(`Agent: watching ${D.rooms.length} rooms at Digs for you…`);
@@ -300,6 +305,11 @@
       out.textContent = Math.max(1, Math.min(14, Number(out.textContent) + Number(b.dataset.step)));
       onChange();
     }
+  });
+  if (sumBtn) sumBtn.addEventListener('click', () => {
+    const open = sumBtn.getAttribute('aria-expanded') !== 'true';
+    sumBtn.setAttribute('aria-expanded', String(open));
+    root.classList.toggle('prefs-open', open);
   });
   rel.addEventListener('click', release);
   acc.addEventListener('click', accept);

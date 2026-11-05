@@ -135,6 +135,36 @@
     'Live at Digs, Trondheim. Leave your request now and the agent starts watching.':
       'Nå på Digs i Trondheim. Legg inn forespørselen din nå, så begynner agenten å følge med.',
 
+    // Bookers page (index.html)
+    'Find a room': 'Finn rom',
+    'Rent out rooms': 'Leie ut rom',
+    'Why Ledig': 'Hvorfor Ledig',
+    'Open Ledig': 'Åpne Ledig',
+    'See how it works': 'Se hvordan det virker',
+    'Say when, how many, what kit and what you will pay. An agent ranks every room at Digs against it, and quotes you the best fit the moment one frees up, often below list price.':
+      'Si når, hvor mange, hvilket utstyr og hva du vil betale. En agent rangerer alle rommene på Digs etter det, og gir deg tilbud på det som passer best i det øyeblikket det blir ledig, ofte under listepris.',
+    'Edit': 'Endre',
+    'Your request': 'Forespørselen din',
+    'Set your needs': 'Si hva du trenger',
+    'Time window, length, group size, equipment, budget and how flexible you are. Say it once; the agent keeps it.':
+      'Tidsrom, varighet, antall personer, utstyr, budsjett og hvor fleksibel du er. Si det én gang, så husker agenten det.',
+    'The agent watches and ranks': 'Agenten følger med og rangerer',
+    'Get a quote, accept': 'Få et tilbud, godta',
+    'When the best fit opens, you get a price and the slot is held for you. One tap accepts; the agent rechecks and books it.':
+      'Når det som passer best blir ledig, får du en pris og tiden holdes av for deg. Ett trykk godtar; agenten sjekker på nytt og booker.',
+    'Cheaper': 'Billigere',
+    'Last-minute rooms, below list price.': 'Rom i siste liten, under listepris.',
+    'Rooms freed by meetings that end early go at standby prices, set inside each space\'s limits.':
+      'Rom som blir ledige når møter slutter tidlig, selges til standby-pris innenfor hvert lokales grenser.',
+    'No hunting': 'Ingen leting',
+    'No calendars to refresh.': 'Ingen kalendere å oppdatere.',
+    'You say what you need once. The agent checks every room at Digs against it and tells you why each one fits or doesn\'t.':
+      'Du sier hva du trenger én gang. Agenten sjekker alle rommene på Digs mot det og forteller deg hvorfor hvert rom passer eller ikke.',
+    'It waits for you': 'Den venter for deg',
+    'The agent does the waiting.': 'Agenten gjør ventingen.',
+    'Nothing fits yet? It keeps watching, and the moment a room frees up you get a quote held just for you.':
+      'Passer ingenting ennå? Den følger med, og i det øyeblikket et rom blir ledig, får du et tilbud holdt av bare for deg.',
+
     // Footer
     'Built at the DNB × Founders Hub hackathon, Trondheim, November 2026. All rooms, times and prices on this page are demo data.':
       'Laget under DNB × Founders Hub-hackathonet i Trondheim, november 2026. Alle rom, tider og priser på denne siden er demodata.',
@@ -143,7 +173,8 @@
   // Attributes, keyed by CSS selector: [selector, attribute, Bokmål]
   const ATTR = [
     ['meta[name="description"]', 'content', 'Si hva du trenger. Den finner rommet. Møterom som blir ledige tidlig på Digs i Trondheim, matchet til deg av en agent.'],
-    ['.nav nav', 'aria-label', 'Hovedmeny'],
+    ['.nav nav:not(.side-switch)', 'aria-label', 'Hovedmeny'],
+    ['.nav .side-switch', 'aria-label', 'Velg side'],
     ['.board', 'aria-label', 'Live demo: agenten matcher rom til en forespørsel'],
     ['#prefs', 'aria-label', 'Dine ønsker: endre hva som helst for å rangere på nytt'],
     ['#prefs input[aria-label="From"]', 'aria-label', 'Fra'],
@@ -171,6 +202,8 @@
   const PATTERNS = [
     [new RegExp(`^${KW}(?: \\+ ${KW})*$`), s => kit(s)],
     [new RegExp(`^no (${KW}(?: or ${KW})*)$`), (m, k) => 'mangler ' + kit(k)],
+    [/^(\d+) people$/, '$1 personer'],
+    [/^1 person$/, '1 person'],
     [new RegExp(`^has (${KW}(?: \\+ ${KW})*)$`), (m, k) => 'har ' + kit(k)],
     [/^seats only (\d+)$/, 'bare $1 plasser'],
     [/^big for (\d+)$/, 'stort for $1'],

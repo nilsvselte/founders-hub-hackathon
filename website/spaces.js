@@ -42,6 +42,8 @@
     btn.classList.remove('pulse'); void btn.offsetWidth; btn.classList.add('pulse');
     led.classList.remove('busy'); void led.offsetWidth; led.classList.add('busy');
     screen.textContent = 'Released. On sale until 16:00';
+    // Renters page: the hero's owner dashboard (renters.js) listens for this and releases its room.
+    t.push(setTimeout(() => document.dispatchEvent(new CustomEvent('ledig:release')), 700));
     const rel = document.getElementById('rel');
     if (rel) {
       t.push(setTimeout(() => {
