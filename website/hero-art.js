@@ -20,14 +20,20 @@
 
   // Put the rooftops just under the buttons at every width.
   var hero = document.querySelector('.hero'), cta = document.querySelector('.hero .cta-row');
-  function place() { city.style.top = (cta.getBoundingClientRect().bottom - hero.getBoundingClientRect().top - 30) + 'px'; }
+  // Phones crop to the left of the skyline, where the blocks stand tall (the centre is kept low for the headline on desktop).
+  var svg = city.querySelector('svg'), narrow = false;
+  function place() {
+    city.style.top = (cta.getBoundingClientRect().bottom - hero.getBoundingClientRect().top - 30) + 'px';
+    narrow = innerWidth < 720;
+    svg.setAttribute('preserveAspectRatio', narrow ? 'xMinYMin slice' : 'xMidYMin slice');
+  }
   place(); addEventListener('resize', place);
   if (document.fonts) document.fonts.ready.then(place);
 
   var lit = [].slice.call(city.querySelectorAll('.hw-w.on'));
   var top3 = lit.filter(function (w) { return +w.getAttribute('y') < 140; });
   var pool = top3.length ? top3 : lit;
-  function free() { var w = pool[Math.floor(Math.random() * pool.length)]; w.classList.add('free'); setTimeout(function () { w.classList.remove('free'); }, 3000); }
+  function free() { var p = narrow ? pool.filter(function (w) { return +w.getAttribute('x') < 300; }) : pool; if (!p.length) p = pool; var w = p[Math.floor(Math.random() * p.length)]; w.classList.add('free'); setTimeout(function () { w.classList.remove('free'); }, 3000); }
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) pool[0] && pool[0].classList.add('free');
   else { free(); setInterval(free, 2200); }
 })();

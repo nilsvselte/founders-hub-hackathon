@@ -5,6 +5,7 @@
 .pfacts li { border-top: 1px solid var(--border); padding-top: 18px; color: var(--ink-soft); font-size: 15px; }
 .pfacts b { display: block; font: 500 44px/1 var(--display); color: var(--ink); letter-spacing: -0.02em; margin-bottom: 10px; font-variant-numeric: tabular-nums; }
 .est { font-size: 12px; color: var(--muted); border: 1px solid var(--border); border-radius: var(--r-full); padding: 1px 8px; margin-left: 6px; vertical-align: 2px; white-space: nowrap; }
+.pfacts .est { margin-left: 0; }
 .pfacts-note { margin-top: 20px; font-size: 13px; color: var(--muted); }
 
 /* Idle-time calculator */

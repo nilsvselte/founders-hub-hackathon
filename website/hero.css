@@ -13,3 +13,5 @@
 .hw-w.on { fill: rgba(244,225,180,.55); }
 .hw-w.dim { fill: rgba(244,225,180,.22); }
 .hw-w.free { fill: #E9B638; filter: drop-shadow(0 0 6px rgba(233,182,56,.8)); transition: fill 600ms; }
+/* Fade the skyline into the section below instead of a hard edge. */
+.hero-art::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 180px; background: linear-gradient(180deg, rgba(15,20,32,0) 0%, var(--ground) 100%); pointer-events: none; }
