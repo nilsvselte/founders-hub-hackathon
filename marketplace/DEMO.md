@@ -34,3 +34,9 @@ The host dashboard refreshes about every 12 seconds. It shows **Booked until**, 
 - Use a fresh listing or a fresh meeting window per run. Record the transition from waiting to confirmed and compare the final price with the renter’s maximum total.
 - Verify the competing request receives no offer and the Calendar link carries the confirmed room, time, and reference. Keep the Calendar draft unsaved.
 - For a keyless rehearsal, set `MARKETPLACE_DEMO_MODE=1` and leave `ANTHROPIC_API_KEY` unset. Expect **Demo match** and describe it as the deterministic demo. Keep simulated board events separate from physical hardware results.
+
+## Rehearsal on 5 November 2026
+
+All 100 isolated host-release cycles on `8409dbc` passed with live Claude Sonnet. The 99 API runs and one full browser run produced 100 distinct booking references, zero fallback matches, and zero double bookings for the same room and time.
+
+The browser run verified the landing page handoff, the waiting request, host release, automatic confirmation, and the exact time, Oslo time zone, room, and reference in the Google Calendar draft link. No event was saved. This rehearsal used the host dashboard release and did not exercise the physical board.
