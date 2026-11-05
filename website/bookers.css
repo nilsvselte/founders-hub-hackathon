@@ -21,9 +21,6 @@
 .standby-paths { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 0; margin-top: 20px; font-size: 14px; }
 .standby-paths .link + .link::before { content: "·"; display: inline-block; margin: 0 14px; color: var(--dim); text-decoration: none; }
 
-/* How: step numbers */
-.step-n { display: inline-block; width: 1.4em; font-variant-numeric: tabular-nums; color: var(--accent); opacity: 0.5; }
-.step.is-on .step-n { opacity: 1; }
 
 /* Why standbyroom */
 .why { background: linear-gradient(180deg, var(--ground) 0%, #121A2C 100%); }
@@ -87,8 +84,7 @@
 .poster-actions .btn { min-height: 64px; font-size: 18px; justify-content: center; }
 @media (max-width: 900px) { .poster-grid { grid-template-columns: 1fr; gap: 32px; } }
 
-/* Footer: note plus the Norwegian landing link */
-.footer-side { display: flex; flex-direction: column; gap: 14px; }
+/* Footer: Norwegian landing link */
 .footer-links { font-size: 14px; }
 
 /* Ledig møterom (ledig-moterom.html) */

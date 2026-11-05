@@ -13,9 +13,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;1,500&family=Inter:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 <link rel="stylesheet" href="hero.css?v=2">
-<link rel="stylesheet" href="renters.css?v=2">
+<link rel="stylesheet" href="renters.css?v=3">
 </head>
 <body class="page-renters">
 <a class="skip" href="#main">Skip to content</a>
@@ -44,7 +44,7 @@
       <h1>Meetings end early.<br><em>Your rooms shouldn't sit empty.</em></h1>
       <p class="lead">Staff press one button when a room frees up. The standbyroom agent sells the rest of the hour to people nearby, at a price inside your limits, and books it for you.</p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="https://app.standbyroom.com/live/digs-demo-1" data-marketplace>See the live room demo</a>
+        <a class="btn btn-gold" href="https://app.standbyroom.com/live/digs-demo-1" data-marketplace>See the live room demo</a>
         <a class="btn btn-ghost" href="https://app.standbyroom.com/host" data-marketplace>Open the host dashboard</a>
       </div>
       <p class="proof">Digs, Krambugata 2: live since 5 Nov 2026.</p>
@@ -75,11 +75,11 @@
           </div>
         </div>
         <ol class="steps">
-          <li><button class="step is-on" type="button" data-step="0" aria-pressed="true">Release a room</button>
+          <li><button class="step is-on" type="button" data-step="0" aria-pressed="true"><span class="step-n">1</span>Release a room</button>
             <p>When a meeting ends early, staff press one button by the door. Nothing to type.</p></li>
-          <li><button class="step" type="button" data-step="1" aria-pressed="false">The agent books it</button>
+          <li><button class="step" type="button" data-step="1" aria-pressed="false"><span class="step-n">2</span>The agent books it</button>
             <p>It finds someone nearby, quotes inside your price limits, books the slot and updates your calendar.</p></li>
-          <li><button class="step" type="button" data-step="2" aria-pressed="false">You earn</button>
+          <li><button class="step" type="button" data-step="2" aria-pressed="false"><span class="step-n">3</span>You earn</button>
             <p>Every booking is paid out monthly, with the fee already taken off.</p></li>
         </ol>
       </div>
@@ -108,7 +108,7 @@
       <h2 class="closing-title">Your empty rooms could <em>earn today.</em></h2>
       <p class="lead">Live at Digs, Trondheim. Release your first room today.</p>
       <div class="cta-row center">
-        <a class="btn btn-primary" href="https://app.standbyroom.com/host" data-marketplace>Open the host dashboard</a>
+        <a class="btn btn-gold" href="https://app.standbyroom.com/host" data-marketplace>Open the host dashboard</a>
       </div>
     </div>
   </section>
@@ -117,7 +117,9 @@
 <footer class="footer">
   <div class="container footer-inner">
     <p class="footer-name" data-product>standbyroom</p>
-    <p class="footer-note">Built at the DNB × Founders Hub hackathon, Trondheim, November 2026. All rooms, times and prices on this page are demo data.</p>
+    <div class="footer-side">
+      <p class="footer-note">Built at the DNB × Founders Hub hackathon, Trondheim, November 2026. All rooms, times and prices on this page are demo data.</p>
+    </div>
   </div>
 </footer>
 
