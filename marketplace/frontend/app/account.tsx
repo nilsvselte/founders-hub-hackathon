@@ -129,11 +129,14 @@ function safeNext(value?: string) {
   return url.pathname + url.search + url.hash;
 }
 
+function isHostDestination(path?: string) {
+  return path === "/host" || (path?.startsWith("/host/") ?? false);
+}
+
 function destination(account: Account, next?: string) {
   const path = next?.split(/[?#]/, 1)[0];
-  const hostPath = path === "/host" || path?.startsWith("/host/");
-  if (account.role === "host") return hostPath && next ? next : "/host";
-  return next && !hostPath && path !== "/sign-in" && path !== "/register" ? next : "/";
+  if (account.role === "host") return next && isHostDestination(path) ? next : "/host";
+  return next && !isHostDestination(path) && path !== "/sign-in" && path !== "/register" ? next : "/";
 }
 
 export function AccountForm({
@@ -146,13 +149,17 @@ export function AccountForm({
   initialRole?: AccountRole;
 }) {
   const register = mode === "register";
-  const { account, setAccount } = useAccount();
+  const { account, loading, setAccount } = useAccount();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [role, setRole] = useState<AccountRole>(initialRole);
   const next = safeNext(rawNext);
-  const alternate = `${register ? "/sign-in" : "/register"}${next ? `?next=${encodeURIComponent(next)}` : ""}`;
+  const [roleChoice, setRoleChoice] = useState<{ entry: string; role: AccountRole }>();
+  const entry = `${initialRole}:${next ?? ""}`;
+  const entryRole = isHostDestination(next?.split(/[?#]/, 1)[0]) ? "host" : initialRole;
+  const role = roleChoice?.entry === entry ? roleChoice.role : entryRole;
+  const alternateNext = next ?? (register && role === "host" ? "/host" : undefined);
+  const alternate = `${register ? "/sign-in" : "/register"}${alternateNext ? `?next=${encodeURIComponent(alternateNext)}` : ""}`;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -184,7 +191,7 @@ export function AccountForm({
         <p className="identity-kicker">Your account</p>
         <h1 id="identity-title">{register ? "Create an account" : "Welcome back"}</h1>
         <p className="identity-intro">{register ? "Choose how you’ll use Roomline." : "Sign in to manage rooms and reservations."}</p>
-        {account ? (
+        {loading ? <p role="status">Checking your account…</p> : account ? (
           <>
             <p>You’re signed in as <strong>{account.name}</strong>.</p>
             <Link href={destination(account, next)} className="identity-primary">Continue <span aria-hidden="true">→</span></Link>
@@ -196,8 +203,8 @@ export function AccountForm({
                 <>
                   <fieldset className="identity-roles">
                     <legend>I want to</legend>
-                    <label><input type="radio" name="role" value="renter" checked={role === "renter"} onChange={() => setRole("renter")} /> Book rooms</label>
-                    <label><input type="radio" name="role" value="host" checked={role === "host"} onChange={() => setRole("host")} /> Host rooms</label>
+                    <label><input type="radio" name="role" value="renter" checked={role === "renter"} onChange={() => setRoleChoice({ entry, role: "renter" })} /> Book rooms</label>
+                    <label><input type="radio" name="role" value="host" checked={role === "host"} onChange={() => setRoleChoice({ entry, role: "host" })} /> Host rooms</label>
                   </fieldset>
                   <label>Full name<input name="name" autoComplete="name" maxLength={100} required /></label>
                 </>
