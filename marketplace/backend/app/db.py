@@ -6,6 +6,8 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg.rows import dict_row
 
+from .venues import venue
+
 
 class NotFound(Exception):
     pass
@@ -19,7 +21,7 @@ _MIGRATION_DIR = Path(__file__).with_name("migrations")
 _MIGRATION_LOCK = 982347119
 _MAX_CANDIDATES = 12
 _OPENING_COLUMNS = """
-    o.id AS opening_id, o.room_id, o.start_at AS opening_start, o.end_at AS opening_end,
+    o.id AS opening_id, o.room_id, r.venue, o.start_at AS opening_start, o.end_at AS opening_end,
     r.name AS room_name, r.capacity, r.equipment,
     r.hourly_rate_ore, r.minimum_hourly_rate_ore, r.maximum_hourly_rate_ore
 """
@@ -91,12 +93,13 @@ def create_request(data: dict) -> str:
         connection.execute(
             """
             INSERT INTO marketplace_requests
-                (id, earliest_start, latest_end, duration_minutes, party_size, equipment,
+                (id, venue, earliest_start, latest_end, duration_minutes, party_size, equipment,
                  max_price_ore, preferences)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 request_id,
+                data["venue"],
                 _datetime(data["earliest_start"]),
                 _datetime(data["latest_end"]),
                 data["duration_minutes"],
@@ -261,6 +264,8 @@ def _busy(connection, room_id, start_at, end_at, now, exclude=None):
 
 
 def _candidate(opening, request, start_at, end_at, now):
+    if opening["venue"] != request["venue"]:
+        return None
     if opening["capacity"] < request["party_size"] or not set(request["equipment"]).issubset(opening["equipment"]):
         return None
     if start_at < max(opening["opening_start"], request["earliest_start"], now):
@@ -301,11 +306,11 @@ def list_candidates(request_id: str) -> list[dict]:
             SELECT {_OPENING_COLUMNS}
             FROM marketplace_openings o
             JOIN marketplace_rooms r ON r.id = o.room_id
-            WHERE o.end_at > GREATEST(%s, %s) AND o.start_at < %s
+            WHERE r.venue = %s AND o.end_at > GREATEST(%s, %s) AND o.start_at < %s
               AND r.capacity >= %s AND r.equipment @> %s::text[]
             ORDER BY o.start_at, o.id
             """,
-            (now, request["earliest_start"], request["latest_end"], request["party_size"], request["equipment"]),
+            (request["venue"], now, request["earliest_start"], request["latest_end"], request["party_size"], request["equipment"]),
         ).fetchall()
         duration = timedelta(minutes=request["duration_minutes"])
         candidates = []
@@ -394,6 +399,6 @@ def accept_offer(request_id: str, offer_id: str) -> dict:
             UPDATE marketplace_offers SET confirmed_at = %s, booking_reference = %s
             WHERE id = %s
             """,
-            (now, "MESH-" + offer["id"].hex[:12].upper(), offer_id),
+            (now, venue(request["venue"]).booking_prefix + "-" + offer["id"].hex[:12].upper(), offer_id),
         )
         return _status(connection, request, now)

@@ -59,3 +59,10 @@ class ReleaseResult(BaseModel):
     created: bool
     opening_id: UUID | None = None
     reason: str | None = None
+
+
+class VenueInfo(BaseModel):
+    id: str
+    operator: str
+    name: str
+    location: str

@@ -75,12 +75,12 @@ class FixtureDeviceAdapter:
         )
 
 
-def demo_release_payload() -> dict[str, str]:
+def demo_release_payload(room_id: str) -> dict[str, str]:
     now = datetime.now(UTC)
     return {
         "type": "room.released",
         "event_id": str(uuid4()),
-        "external_room_id": "digs-demo-1",
+        "external_room_id": room_id,
         "block_id": str(uuid4()),
         "released_at": now.isoformat(),
         "scheduled_end_at": (now + timedelta(hours=2)).isoformat(),

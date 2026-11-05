@@ -86,7 +86,7 @@ function describeWindow(start: string, end: string) {
 
 const requestPath = (id: string) => `standby-requests/${encodeURIComponent(id)}`;
 
-export default function Standby() {
+export default function Standby({ venueName }: { venueName: string }) {
   const [request, setRequest] = useState<StandbyRequest | null>(null);
   const [busy, setBusy] = useState<Action | null>(null);
   const [error, setError] = useState("");
@@ -369,7 +369,7 @@ export default function Standby() {
         {demoEnabled && status === "waiting" && (
           <div className="demo">
             <strong>Demo controls</strong>
-            <p>Simulate a room becoming available at Digs.</p>
+            <p>Simulate a room becoming available at {venueName}.</p>
             <button type="button" className="button secondary" onClick={release} disabled={!!busy}>
               {busy === "release" ? "Releasing…" : "Release demo room"}
             </button>

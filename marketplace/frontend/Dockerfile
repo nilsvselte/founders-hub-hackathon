@@ -7,6 +7,8 @@ RUN npm install --global "$(node -p 'require("./package.json").packageManager')"
 
 COPY . .
 ARG MARKETPLACE_API_URL=http://127.0.0.1:8000
+# The page also reads the API address at runtime to load the venue.
+ENV MARKETPLACE_API_URL=$MARKETPLACE_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 

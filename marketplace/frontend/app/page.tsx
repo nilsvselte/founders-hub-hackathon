@@ -1,4 +1,31 @@
+import type { Metadata } from "next";
 import Standby from "./standby";
+
+// The venue comes from the API at request time, so the page isn't prerendered at build.
+export const dynamic = "force-dynamic";
+
+type Venue = { id: string; operator: string; name: string; location: string };
+
+const fallbackVenue: Venue = { id: "digs", operator: "Mesh", name: "Digs", location: "Digs, Trondheim" };
+const apiUrl = (process.env.MARKETPLACE_API_URL ?? "http://127.0.0.1:8000").replace(/\/+$/, "");
+
+async function loadVenue(): Promise<Venue> {
+  try {
+    const response = await fetch(`${apiUrl}/venue`, { cache: "no-store", signal: AbortSignal.timeout(3000) });
+    if (response.ok) return (await response.json()) as Venue;
+  } catch {
+    // Fall back to the default venue so the page still renders while the API starts.
+  }
+  return fallbackVenue;
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const venue = await loadVenue();
+  return {
+    title: `${venue.operator} Meeting Rooms`,
+    description: `A standby marketplace for meeting rooms at ${venue.location}.`,
+  };
+}
 
 function RoomPlan() {
   return (
@@ -21,7 +48,8 @@ function RoomPlan() {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const venue = await loadVenue();
   return (
     <>
       <header className="masthead">
@@ -29,16 +57,20 @@ export default function Home() {
           <div className="brand">
             <svg width="25" height="25" viewBox="0 0 25 25" fill="none" aria-hidden="true">
               <rect x="1" y="1" width="23" height="23" rx="5" fill="currentColor" />
-              <path d="M7 17V8l5.5 6L18 8v9" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              {venue.operator.startsWith("M") ? (
+                <path d="M7 17V8l5.5 6L18 8v9" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              ) : (
+                <path d="M8.5 7.5v10m8-10-6 5.5m1.5-1.5 4.5 6" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              )}
             </svg>
-            <span>Mesh <span className="brand-secondary">/ Meeting rooms</span></span>
+            <span>{venue.operator} <span className="brand-secondary">/ Meeting rooms</span></span>
           </div>
           <div className="location">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M19 10c0 5-7 10-7 10s-7-5-7-10a7 7 0 1 1 14 0Z" stroke="currentColor" strokeWidth="1.7" />
               <circle cx="12" cy="10" r="2" stroke="currentColor" strokeWidth="1.7" />
             </svg>
-            Digs, Trondheim
+            {venue.location}
           </div>
         </div>
       </header>
@@ -47,11 +79,11 @@ export default function Home() {
           <div>
             <p className="eyebrow"><span className="live-dot" /> Standby booking</p>
             <h1 id="page-title">Meeting space,<br />at short notice.</h1>
-            <p className="hero-copy">Tell us what your team needs. When a room opens up at Digs, we’ll look for a match and show you the price before you book.</p>
+            <p className="hero-copy">Tell us what your team needs. When a room opens up at {venue.name}, we’ll look for a match and show you the price before you book.</p>
           </div>
           <RoomPlan />
         </section>
-        <Standby />
+        <Standby venueName={venue.name} />
       </main>
     </>
   );
