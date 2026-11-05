@@ -9,3 +9,6 @@ dependencies = [
     "pywebpush>=2,<3",
     "uvicorn>=0.34,<1",
 ]
+
+[tool.vercel]
+entrypoint = "app.main:app"
