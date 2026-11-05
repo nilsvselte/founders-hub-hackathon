@@ -1,6 +1,6 @@
-import Browse from "./browse";
+import Browse from "../browse";
 
-export default function Home() {
+export default function MarketplacePage() {
   return (
     <main className="market-browse">
       <Browse />

@@ -1,11 +1,12 @@
 FROM node:22-bookworm-slim
 
-WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+WORKDIR /app/marketplace/frontend
+COPY marketplace/frontend/package.json marketplace/frontend/pnpm-lock.yaml ./
 RUN npm install --global "$(node -p 'require("./package.json").packageManager')" \
     && pnpm install --frozen-lockfile
 
-COPY . .
+COPY marketplace/frontend/ .
+COPY website/ /app/website/
 ARG MARKETPLACE_API_URL=http://127.0.0.1:8000
 # The page also reads the API address at runtime to load the venue.
 ENV MARKETPLACE_API_URL=$MARKETPLACE_API_URL

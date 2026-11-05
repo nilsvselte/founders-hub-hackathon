@@ -20,7 +20,7 @@ export default function RoomDetail({ roomId, searchDate, guests }: { roomId: str
     const value = params.get(name);
     if (value) browseParams.set(name, value);
   }
-  const browseHref = browseParams.size ? `/?${browseParams}` : "/";
+  const browseHref = browseParams.size ? `/marketplace?${browseParams}` : "/marketplace";
   const roomPhoto = photo(room?.image_key);
   const venue = room ? factsForVenue(room.venue) : undefined;
 

@@ -49,7 +49,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ..
+      dockerfile: marketplace/frontend/Dockerfile
       args:
         MARKETPLACE_API_URL: http://api:8000
     ports:

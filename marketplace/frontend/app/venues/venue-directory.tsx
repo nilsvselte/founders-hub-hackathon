@@ -30,7 +30,7 @@ function CatalogVenues({ rooms }: { rooms: Room[] }) {
             const cities = [...new Set(listings.map((room) => room.city))].join(" · ");
             return (
               <article className="room-card" key={name}>
-                <Link className="room-card-link" href={`/?${new URLSearchParams({ location: name })}`}>
+                <Link className="room-card-link" href={`/marketplace?${new URLSearchParams({ location: name })}`}>
                   <div className="room-card-photo">
                     {venuePhoto ? (
                       <Image src={venuePhoto.src} alt="" fill sizes="(max-width: 560px) 92vw, (max-width: 860px) 45vw, 30vw" />

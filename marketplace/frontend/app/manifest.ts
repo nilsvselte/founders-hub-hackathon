@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "standbyroom",
     short_name: "standbyroom",
     description: "Browse and request meeting rooms across venues.",
-    start_url: "/",
+    start_url: "/marketplace",
     scope: "/",
     display: "standalone",
     theme_color: "#0A0E18",

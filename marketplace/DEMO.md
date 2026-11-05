@@ -4,7 +4,7 @@ A renter asks for a room. A host releases unused time. Claude finds a match, and
 
 ## Before the audience arrives
 
-1. Start the marketplace API on `8001` and the frontend on `3001`, with `MARKETPLACE_API_URL=http://127.0.0.1:8001`. Serve the landing page from the repo root with `python3 -m http.server 8088 --bind 127.0.0.1 --directory website`. Open the [landing page](http://127.0.0.1:8088/) and [host dashboard](http://127.0.0.1:3001/host) in separate sessions, and check [API readiness](http://127.0.0.1:3001/api/ready). [Marketplace setup](README.md)
+1. Start the marketplace API on `8001` and the frontend on `3001`, with `MARKETPLACE_API_URL=http://127.0.0.1:8001`. Open the [landing page](http://127.0.0.1:3001/) and [host dashboard](http://127.0.0.1:3001/host) in separate sessions, and check [API readiness](http://127.0.0.1:3001/api/ready). [Marketplace setup](README.md)
 2. In a test database, publish a fresh host-owned room with a screen and capacity for four. Keep the demo window clear of existing openings. Sign in as the host and as two separate test renters. Configure the live matcher and confirm a rehearsal booking shows **Matched by Claude**. Use fresh inventory for the stage run. [Live matcher setup](README.md#try-the-booking-demo)
 3. Pick an exact 30-minute slot starting about 10 minutes into the future. Choose a total budget above the rehearsed price. A one-hour release covers this window and the default two-minute turnaround.
 
@@ -14,7 +14,7 @@ For a Digs fixture, enable `MARKETPLACE_DEMO_MODE=1` on a disposable Compose sta
 docker compose exec -e DEMO_HOST_PASSWORD="$DEMO_HOST_PASSWORD" api .venv/bin/python -m app.demo_host host@example.test
 ```
 
-Compose serves the marketplace on `3000`. For Compose or a hosted HTTPS preview, set `data-marketplace-origin` on the landing page’s `main.js` script tag to the matching marketplace origin. To show the installable phone app separately, open that HTTPS preview on the phone. [Phone app setup](../docs/phone-app.md)
+Compose serves the landing page and marketplace together on `3000`. On Compose or a hosted HTTPS preview, use `/` for the landing page and `/marketplace` to browse rooms. To show the installable phone app separately, open that HTTPS preview on the phone. [Phone app setup](../docs/phone-app.md)
 
 ## On stage
 

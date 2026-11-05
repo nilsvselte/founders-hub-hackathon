@@ -15,7 +15,8 @@ function marketplaceOrigin(value) {
 // Demo Mac: the landing page is served on :8080 and the marketplace on :3000 of the same host
 // (localhost or the Tailscale IP), so phones and other laptops on the tailnet reach both.
 const demoOrigin = location.port === '8080' ? `${location.protocol}//${location.hostname}:3000` : null;
-const marketOrigin = marketplaceOrigin(document.currentScript?.dataset.marketplaceOrigin) || demoOrigin;
+const configuredOrigin = document.currentScript?.dataset.marketplaceOrigin;
+const marketOrigin = configuredOrigin === 'same-origin' ? null : marketplaceOrigin(configuredOrigin) || demoOrigin;
 if (marketOrigin) {
   document.querySelectorAll('[data-marketplace]').forEach(element => {
     const property = element.localName === 'form' ? 'action' : 'href';

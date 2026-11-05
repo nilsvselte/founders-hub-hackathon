@@ -10,7 +10,7 @@ export default async function StandbyPage({ searchParams }: Props) {
 
   return (
     <main className="booking-detail">
-      <Link className="room-back" href="/"><span aria-hidden="true">←</span> Browse rooms</Link>
+      <Link className="room-back" href="/marketplace"><span aria-hidden="true">←</span> Browse rooms</Link>
       <div className="booking-detail-heading">
         <p className="room-kicker">Standby matching</p>
         <h1>Find a room for me</h1>

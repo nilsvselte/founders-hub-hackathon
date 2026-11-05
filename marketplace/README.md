@@ -10,7 +10,7 @@ With Docker and the Compose plugin installed, start the Docker engine. Run this 
 docker compose up --build -d --wait
 ```
 
-Open [the marketplace](http://127.0.0.1:3000) or [the API docs](http://127.0.0.1:8000/docs). Compose waits for PostgreSQL, the API, and the frontend’s `/api/ready` route. You can check the full connection with `curl -f http://127.0.0.1:3000/api/ready`.
+Open [the landing page](http://127.0.0.1:3000/), [browse rooms](http://127.0.0.1:3000/marketplace), or [view the API docs](http://127.0.0.1:8000/docs). Compose waits for PostgreSQL, the API, and the frontend’s `/api/ready` route. You can check the full connection with `curl -f http://127.0.0.1:3000/api/ready`.
 
 Run the same Compose command after editing the app to rebuild the images. Use `docker compose down` to stop the stack. PostgreSQL data stays in a named volume.
 
@@ -49,7 +49,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Open `http://localhost:3000`. Next.js forwards `/api/*` to Uvicorn so browser requests use the same origin. Run `curl -f http://localhost:3000/api/ready` to check the connection through the frontend. To use a different API address, copy `.env.example` to `.env.local` in the frontend and set `MARKETPLACE_API_URL` before starting or building Next.js.
+Open `http://localhost:3000/` for the landing page and `http://localhost:3000/marketplace` for room browsing. The frontend copies the static site from `website/` at startup and build time. Restart the dev server after editing the landing page. Next.js forwards `/api/*` to Uvicorn so browser requests use the same origin. Run `curl -f http://localhost:3000/api/ready` to check the connection through the frontend. To use a different API address, copy `.env.example` to `.env.local` in the frontend and set `MARKETPLACE_API_URL` before starting or building Next.js.
 
 ## Try the booking demo
 

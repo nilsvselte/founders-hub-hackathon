@@ -78,7 +78,7 @@ export function MarketHeader() {
     try {
       await api("auth/logout", { method: "POST" });
       setAccount(null);
-      router.replace("/");
+      router.replace("/marketplace");
     } catch {
       setError("Couldn’t sign out. Please try again.");
     } finally {
@@ -89,7 +89,7 @@ export function MarketHeader() {
   return (
     <header className="market-header">
       <div className="market-header-inner">
-        <Link className="market-wordmark" href="/" aria-label="standbyroom marketplace">
+        <a className="market-wordmark" href="/" aria-label="standbyroom home">
           <span className="market-mark" aria-hidden="true">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <rect x="3.75" y="5.75" width="16.5" height="15" rx="3" stroke="currentColor" strokeWidth="1.7" />
@@ -97,9 +97,9 @@ export function MarketHeader() {
             </svg>
           </span>
           standbyroom
-        </Link>
+        </a>
         <nav className="market-nav" aria-label="Marketplace">
-          <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>Browse rooms</Link>
+          <Link href="/marketplace" aria-current={pathname === "/marketplace" ? "page" : undefined}>Browse rooms</Link>
           <Link href="/venues" aria-current={pathname.startsWith("/venues") ? "page" : undefined}>Venues</Link>
           {account ? (
             <Link href={primaryPath} aria-current={pathname.startsWith(primaryPath) ? "page" : undefined}>
@@ -152,7 +152,7 @@ function isHostDestination(path?: string) {
 function destination(account: Account, next?: string) {
   const path = next?.split(/[?#]/, 1)[0];
   if (account.role === "host") return next && isHostDestination(path) ? next : "/host";
-  return next && !isHostDestination(path) && path !== "/sign-in" && path !== "/register" ? next : "/";
+  return next && !isHostDestination(path) && path !== "/sign-in" && path !== "/register" ? next : "/marketplace";
 }
 
 export function AccountForm({

@@ -173,7 +173,7 @@ function BrowseResults() {
 
   function updateSearch(next: Search, nextCategory: string) {
     const query = searchQuery(next, nextCategory);
-    window.history.replaceState(null, "", query ? `/?${query}` : "/");
+    window.history.replaceState(null, "", query ? `/marketplace?${query}` : "/marketplace");
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {

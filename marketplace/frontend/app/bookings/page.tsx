@@ -87,7 +87,7 @@ export default function BookingsPage() {
         <div className="booking-empty">
           <h2>No bookings yet</h2>
           <p>When you request a room, its status will show up here.</p>
-          <Link className="identity-primary" href="/">Browse rooms <span aria-hidden="true">→</span></Link>
+          <Link className="identity-primary" href="/marketplace">Browse rooms <span aria-hidden="true">→</span></Link>
         </div>
       )}
     </main>

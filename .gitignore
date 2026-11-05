@@ -24,3 +24,6 @@ coverage/
 *.db
 *.db-wal
 *.db-shm
+
+# Landing files staged for the Next.js build
+/marketplace/frontend/public/_landing/

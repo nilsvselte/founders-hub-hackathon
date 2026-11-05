@@ -1,0 +1,12 @@
+**
+!marketplace
+!marketplace/frontend
+!marketplace/frontend/**
+!website
+!website/**
+**/node_modules
+**/.next
+**/.env*
+**/next-env.d.ts
+**/*.tsbuildinfo
+marketplace/frontend/public/_landing
