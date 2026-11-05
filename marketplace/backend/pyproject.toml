@@ -6,5 +6,6 @@ dependencies = [
     "fastapi>=0.115,<1",
     "psycopg[binary]>=3.2,<4",
     "pydantic-ai-slim[anthropic]>=1.107.10,<2",
+    "pywebpush>=2,<3",
     "uvicorn>=0.34,<1",
 ]
