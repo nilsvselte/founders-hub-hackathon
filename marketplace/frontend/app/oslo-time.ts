@@ -11,7 +11,7 @@ export const dayMs = 86_400_000;
 
 export function osloDateTime(instant: number) {
   const parts = Object.fromEntries(osloClock.formatToParts(instant).map(({ type, value }) => [type, value]));
-  return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${parts.hour}:${parts.minute}` };
+  return { date: `${parts.year.padStart(4, "0")}-${parts.month}-${parts.day}`, time: `${parts.hour}:${parts.minute}` };
 }
 
 export function osloInstant({ date, time }: { date: string; time: string }) {
@@ -23,6 +23,7 @@ export function osloInstant({ date, time }: { date: string; time: string }) {
   for (const sample of [wall - dayMs, wall + dayMs]) {
     const local = osloDateTime(sample);
     const offset = Date.parse(`${local.date}T${local.time}:00Z`) - sample;
+    if (!Number.isFinite(offset)) continue;
     const instant = wall - offset;
     const roundTrip = osloDateTime(instant);
     if (roundTrip.date === date && roundTrip.time === time) return new Date(instant);

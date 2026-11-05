@@ -1,7 +1,8 @@
 import os
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from uuid import UUID, uuid4
+from zoneinfo import ZoneInfo
 
 import psycopg
 from psycopg.rows import dict_row
@@ -21,6 +22,7 @@ class Conflict(Exception):
 _MIGRATION_DIR = Path(__file__).with_name("migrations")
 _MIGRATION_LOCK = 982347119
 _MAX_CANDIDATES = 12
+_OSLO = ZoneInfo("Europe/Oslo")
 _ROOM_COLUMNS = "id, name, city, venue_name AS venue, kind, description, image_key, capacity, equipment, hourly_rate_ore"
 _OPENING_COLUMNS = """
     o.id AS opening_id, o.room_id, r.venue, o.start_at AS opening_start, o.end_at AS opening_end,
@@ -198,7 +200,7 @@ def _status(connection, request, now):
                         "expires_at", "match_reason", "match_provider", "booking_reference")
         })
         data["booking_reference"] = offer["booking_reference"]
-    elif max(now, request["earliest_start"]) + timedelta(minutes=request["duration_minutes"]) > request["latest_end"]:
+    elif max(now, _datetime(request["earliest_start"])) + timedelta(minutes=request["duration_minutes"]) > request["latest_end"]:
         data["status"] = "expired"
     return data
 
@@ -351,13 +353,16 @@ def _candidate(opening, request, start_at, end_at, now):
         return None
     if opening["capacity"] < request["party_size"] or not set(request["equipment"]).issubset(opening["equipment"]):
         return None
-    if start_at < max(opening["opening_start"], request["earliest_start"], now):
+    if start_at < max(_datetime(opening["opening_start"]), _datetime(request["earliest_start"]), now):
         return None
-    if end_at > min(opening["opening_end"], request["latest_end"]):
+    if end_at > min(_datetime(opening["opening_end"]), _datetime(request["latest_end"])):
         return None
     if end_at - start_at != timedelta(minutes=request["duration_minutes"]):
         return None
-    price = _quote(opening, request["duration_minutes"], start_at, now)["price_ore"]
+    try:
+        price = _quote(opening, request["duration_minutes"], start_at, now)["price_ore"]
+    except OverflowError:
+        return None
     if price > request["max_price_ore"]:
         return None
     return _json({
@@ -371,11 +376,38 @@ def _candidate(opening, request, start_at, end_at, now):
 def _gaps(start_at, end_at, busy):
     cursor = start_at
     for block in busy:
-        if cursor < block["start_at"]:
-            yield cursor, block["start_at"]
-        cursor = max(cursor, block["end_at"])
+        block_start = _datetime(block["start_at"])
+        if cursor < block_start:
+            yield cursor, block_start
+        cursor = max(cursor, _datetime(block["end_at"]))
     if cursor < end_at:
         yield cursor, end_at
+
+
+def _candidate_starts(gap_start, latest_start):
+    if gap_start > latest_start:
+        return
+    yield gap_start
+    try:
+        first_day = gap_start.astimezone(_OSLO).date()
+    except OverflowError:
+        return
+
+    # The base rate repeats weekly. Losing the last-minute discount cannot
+    # make a later start cheaper, so the first week covers every cheaper band.
+    for offset in range(min(7, (date.max - first_day).days) + 1):
+        day = first_day + timedelta(days=offset)
+        weekday = day.weekday()
+        if weekday < 5:
+            hours = (0, 9, 16) if weekday == 0 else (9, 16)
+        else:
+            hours = (0,) if weekday == 5 else ()
+        for hour in hours:
+            boundary = datetime.combine(day, time(hour), _OSLO).astimezone(UTC)
+            if boundary > latest_start:
+                return
+            if boundary > gap_start:
+                yield boundary
 
 
 def list_candidates(request_id: str) -> list[dict]:
@@ -401,20 +433,23 @@ def list_candidates(request_id: str) -> list[dict]:
             ),
         ).fetchall()
         duration = timedelta(minutes=request["duration_minutes"])
+        earliest_start = _datetime(request["earliest_start"])
+        latest_end = _datetime(request["latest_end"])
         candidates = []
         for opening in openings:
-            start_at = max(opening["opening_start"], request["earliest_start"], now + timedelta(minutes=1))
-            end_at = min(opening["opening_end"], request["latest_end"])
-            if start_at + duration > end_at:
+            start_at = max(_datetime(opening["opening_start"]), earliest_start, now + timedelta(minutes=1))
+            end_at = min(_datetime(opening["opening_end"]), latest_end)
+            if end_at - start_at < duration:
                 continue
             busy = _busy(connection, opening["room_id"], start_at, end_at, now)
             for gap_start, gap_end in _gaps(start_at, end_at, busy):
-                if gap_start + duration <= gap_end:
-                    candidate = _candidate(opening, request, gap_start, gap_start + duration, now)
+                for start in _candidate_starts(gap_start, gap_end - duration):
+                    candidate = _candidate(opening, request, start, start + duration, now)
                     if candidate:
                         candidates.append(candidate)
                         if len(candidates) >= _MAX_CANDIDATES:
                             return candidates
+                        break
         return candidates
 
 
@@ -460,6 +495,18 @@ def accept_offer(request_id: str, offer_id: str, *, user_id: UUID) -> dict:
         request = _request(connection, request_id, user_id=user_id, lock=True)
         if not request:
             raise NotFound("Standby request not found")
+        room = connection.execute(
+            """
+            SELECT id FROM marketplace_rooms
+            WHERE id = (SELECT room_id FROM marketplace_offers WHERE id = %s AND request_id = %s)
+            FOR UPDATE
+            """,
+            (offer_id, request_id),
+        ).fetchone()
+        if not room:
+            raise NotFound("Offer not found")
+        # Take a fresh snapshot after the room lock. A host may have expired the
+        # offer while this transaction was waiting for the room.
         offer = connection.execute(
             """
             SELECT o.*, w.start_at AS opening_start, w.end_at AS opening_end, r.published, r.venue
@@ -467,7 +514,6 @@ def accept_offer(request_id: str, offer_id: str, *, user_id: UUID) -> dict:
             JOIN marketplace_openings w ON w.id = o.opening_id
             JOIN marketplace_rooms r ON r.id = o.room_id
             WHERE o.id = %s AND o.request_id = %s
-            FOR UPDATE OF r
             """,
             (offer_id, request_id),
         ).fetchone()
@@ -480,9 +526,10 @@ def accept_offer(request_id: str, offer_id: str, *, user_id: UUID) -> dict:
             raise Conflict("The room is no longer available.")
         if offer["expires_at"] <= now:
             raise Conflict("This offer expired. Check your request for a new match.")
-        if not offer["opening_start"] <= offer["start_at"] < offer["end_at"] <= offer["opening_end"]:
+        start_at, end_at = _datetime(offer["start_at"]), _datetime(offer["end_at"])
+        if not _datetime(offer["opening_start"]) <= start_at < end_at <= _datetime(offer["opening_end"]):
             raise Conflict("The room is no longer available at that time.")
-        if _busy(connection, offer["room_id"], offer["start_at"], offer["end_at"], now, exclude=offer_id):
+        if _busy(connection, offer["room_id"], start_at, end_at, now, exclude=offer_id):
             raise Conflict("The room is no longer available at that time.")
         known_venue = VENUES.get(offer["venue"])
         prefix = known_venue.booking_prefix if known_venue else "ROOM"

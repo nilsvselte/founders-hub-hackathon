@@ -2,14 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api, money, photo } from "./market";
 import type { Room } from "./market";
 import { osloDateTime } from "./oslo-time";
 
 const categories = ["All spaces", "Meeting room", "Studio", "Workshop", "Boardroom", "Event space"];
-const guestCounts = Array.from({ length: 20 }, (_, index) => index + 1);
+const maximumGuests = 100;
+const emptySearch = { location: "", date: "", guests: 0 };
+const allSpaces = "All spaces";
+type Search = typeof emptySearch;
 const displayDate = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
   day: "numeric",
@@ -75,29 +79,69 @@ function RoomCard({ room, searchParams }: { room: Room; searchParams: string }) 
   );
 }
 
+function readSearch(params: Pick<URLSearchParams, "get">, today: string) {
+  const date = params.get("date") ?? "";
+  const parsedDate = new Date(date);
+  const guests = Number(params.get("guests") ?? 0);
+  return {
+    location: (params.get("location") ?? "").trim(),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(parsedDate.getTime())
+      && parsedDate.toISOString().slice(0, 10) === date && date >= today ? date : "",
+    guests: Number.isInteger(guests) && guests >= 1 && guests <= maximumGuests ? guests : 0,
+  };
+}
+
+function searchQuery(search: Search, category: string) {
+  const params = new URLSearchParams();
+  if (search.location) params.set("location", search.location);
+  if (search.date) params.set("date", search.date);
+  if (search.guests) params.set("guests", String(search.guests));
+  if (category !== allSpaces) params.set("category", category);
+  return params.toString();
+}
+
 export default function Browse() {
+  return (
+    <Suspense fallback={<p className="browse-empty" role="status">Finding rooms…</p>}>
+      <BrowseResults />
+    </Suspense>
+  );
+}
+
+function BrowseResults() {
+  const params = useSearchParams();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   const [retry, setRetry] = useState(0);
-  const searchForm = useRef<HTMLFormElement>(null);
-  const [filters, setFilters] = useState({ location: "", date: "", guests: 0 });
-  const [category, setCategory] = useState("All spaces");
-  const [today, setToday] = useState<string>();
+  const [draft, setDraft] = useState(emptySearch);
+  const [today, setToday] = useState("");
+  const filters = readSearch(params, today);
+  const { location, date, guests } = filters;
+  const category = params.get("category") || allSpaces;
 
   useEffect(() => {
     setToday(osloDateTime(Date.now()).date);
   }, []);
 
+  useEffect(() => setDraft({ location, date, guests }), [location, date, guests]);
+
   useEffect(() => {
     const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      controller.abort();
+      setLoadState("error");
+    }, 12_000);
     api<Room[]>("rooms", { signal: controller.signal }).then((list) => {
       if (controller.signal.aborted) return;
       setRooms(list);
       setLoadState("ready");
     }).catch(() => {
       if (!controller.signal.aborted) setLoadState("error");
-    });
-    return () => controller.abort();
+    }).finally(() => window.clearTimeout(timeout));
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
   }, [retry]);
 
   const searchTerm = filters.location.toLocaleLowerCase();
@@ -110,46 +154,48 @@ export default function Browse() {
       ? venueNames.map((name) => ({ key: `venue:${name}`, label: name, icon: "map" as const }))
       : availableKinds.map((kind) => ({ key: kind, label: kind, icon: categoryIcons[kind] }))),
   ];
+  const activeCategory = options.some(({ key }) => key === category) ? category : allSpaces;
   const matches = rooms.filter((room) => {
     const locationText = `${room.city} ${room.venue} ${room.name}`.toLocaleLowerCase();
-    const matchesCategory = category === "All spaces"
-      || (category.startsWith("venue:") ? room.venue === category.slice(6) : room.kind === category);
+    const matchesCategory = activeCategory === allSpaces
+      || (activeCategory.startsWith("venue:") ? room.venue === activeCategory.slice(6) : room.kind === activeCategory);
     return locationText.includes(searchTerm)
       && room.capacity >= filters.guests
       && matchesCategory;
   }).sort((first, second) => Number(Boolean(photo(second.image_key))) - Number(Boolean(photo(first.image_key))));
-  const isFiltered = !!filters.location || filters.guests > 0 || category !== "All spaces";
+  const isFiltered = !!filters.location || filters.guests > 0 || activeCategory !== allSpaces;
   const hasSearch = isFiltered || !!filters.date;
   const cities = [...new Set(rooms.map((room) => room.city))].sort();
-  const roomSearchParams = new URLSearchParams();
-  if (filters.date) roomSearchParams.set("date", filters.date);
-  if (filters.guests) roomSearchParams.set("guests", String(filters.guests));
-  const searchParams = roomSearchParams.toString();
+  const guestLimit = Math.min(maximumGuests, Math.max(20, draft.guests, ...rooms.map(({ capacity }) => capacity)));
+  const guestCounts = Array.from({ length: guestLimit }, (_, index) => index + 1);
+  const searchParams = searchQuery(filters, activeCategory);
+
+  function updateSearch(next: Search, nextCategory: string) {
+    const query = searchQuery(next, nextCategory);
+    window.history.replaceState(null, "", query ? `/?${query}` : "/");
+  }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const values = new FormData(event.currentTarget);
-    setFilters({
-      location: String(values.get("location") ?? "").trim(),
-      date: String(values.get("date") ?? ""),
-      guests: Number(values.get("guests") ?? 0),
-    });
+    const next = { ...draft, location: draft.location.trim() };
+    setDraft(next);
+    updateSearch(next, activeCategory);
   }
 
   function reset() {
-    searchForm.current?.reset();
-    setFilters({ location: "", date: "", guests: 0 });
-    setCategory("All spaces");
+    setDraft(emptySearch);
+    updateSearch(emptySearch, allSpaces);
   }
 
   return (
     <>
-      <form ref={searchForm} className="browse-search" role="search" aria-label="Find rooms" onSubmit={submit}>
+      <form className="browse-search" role="search" aria-label="Find rooms" onSubmit={submit}>
         <label className="browse-field">
           <Icon name="map" />
           <span>
             <span>Where</span>
-            <input name="location" list="room-cities" placeholder="Any city or venue" />
+            <input name="location" list="room-cities" placeholder="Any city or venue" value={draft.location}
+              onChange={(event) => setDraft({ ...draft, location: event.target.value })} />
             <datalist id="room-cities">{cities.map((city) => <option key={city} value={city} />)}</datalist>
           </span>
         </label>
@@ -157,14 +203,16 @@ export default function Browse() {
           <Icon name="calendar" />
           <span>
             <span>When</span>
-            <input name="date" type="date" min={today} max="9999-12-31" />
+            <input name="date" type="date" min={today || undefined} max="9999-12-31" value={draft.date}
+              onChange={(event) => setDraft({ ...draft, date: event.target.value })} />
           </span>
         </label>
         <label className="browse-field">
           <Icon name="guests" />
           <span>
             <span>Guests</span>
-            <select name="guests" defaultValue="">
+            <select name="guests" value={draft.guests || ""}
+              onChange={(event) => setDraft({ ...draft, guests: Number(event.target.value) })}>
               <option value="">Add guests</option>
               {guestCounts.map((count) => <option key={count} value={count}>{count} {count === 1 ? "guest" : "guests"}</option>)}
             </select>
@@ -175,7 +223,7 @@ export default function Browse() {
 
       <div className="browse-categories" role="group" aria-label={useVenueFilters ? "Venue" : "Room type"}>
         {options.map(({key, label, icon}) => (
-          <button className="browse-category" key={key} type="button" aria-pressed={category === key} onClick={() => setCategory(key)}>
+          <button className="browse-category" key={key} type="button" aria-pressed={activeCategory === key} onClick={() => updateSearch(filters, key)}>
             <Icon name={icon} />
             <span>{label}</span>
           </button>
@@ -199,7 +247,7 @@ export default function Browse() {
         {loadState === "error" && (
           <div className="browse-empty">
             <p role="alert">Rooms are temporarily unavailable.</p>
-            <button type="button" className="browse-reset" onClick={() => { setLoadState("loading"); setRetry(retry + 1); }}>Try again</button>
+            <button type="button" className="browse-reset" onClick={() => { setLoadState("loading"); setRetry((value) => value + 1); }}>Try again</button>
           </div>
         )}
         {loadState === "ready" && (matches.length ? (

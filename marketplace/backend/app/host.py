@@ -1,7 +1,7 @@
 import re
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
-from uuid import UUID, uuid4
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
 from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
@@ -52,6 +52,7 @@ class HostRoomPatch(BaseModel):
 
 class HostReleaseInput(BaseModel):
     duration_minutes: int = Field(ge=15, le=720)
+    release_id: UUID | None = None
 
 
 def require_host(user: Annotated[Account, Depends(require_user)]) -> Account:
@@ -161,8 +162,11 @@ def release_host_room(
         raise HTTPException(status_code=409, detail="Publish this listing before releasing time")
 
     now = datetime.now(UTC)
-    event_id = str(uuid4())
-    return ingest_release({
+    event_id = str(
+        uuid5(NAMESPACE_URL, f"standbyroom:host-release:{host.id}:{room_id}:{body.release_id}")
+        if body.release_id is not None else uuid4()
+    )
+    result = ingest_release({
         "source": "host",
         "event_id": event_id,
         "block_id": event_id,
@@ -170,3 +174,6 @@ def release_host_room(
         "released_at": now,
         "scheduled_end_at": now + timedelta(minutes=body.duration_minutes),
     }, background_tasks)
+    if result.get("reason") == "room_unpublished":
+        raise HTTPException(status_code=409, detail="Publish this listing before releasing time")
+    return result

@@ -38,9 +38,14 @@ class StandbyRequestInput(BaseModel):
 
     @model_validator(mode="after")
     def validate_window(self) -> "StandbyRequestInput":
-        if self.latest_end <= datetime.now(timezone.utc):
+        try:
+            earliest = self.earliest_start.astimezone(timezone.utc)
+            latest = self.latest_end.astimezone(timezone.utc)
+        except OverflowError as exc:
+            raise ValueError("The request window is outside the supported date range") from exc
+        if latest <= datetime.now(timezone.utc):
             raise ValueError("The end of the request window must be in the future")
-        if self.latest_end - self.earliest_start < timedelta(minutes=self.duration_minutes):
+        if latest - earliest < timedelta(minutes=self.duration_minutes):
             raise ValueError("The request window must fit the requested duration")
         return self
 

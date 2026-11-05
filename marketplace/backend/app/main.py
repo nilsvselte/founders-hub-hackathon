@@ -2,6 +2,7 @@ import logging
 import os
 import secrets
 from datetime import UTC, datetime
+from threading import Event, Lock
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -26,6 +27,8 @@ app.include_router(accounts_router)
 app.include_router(host.router)
 logger = logging.getLogger(__name__)
 device_bearer = HTTPBearer(auto_error=False)
+_match_lock = Lock()
+_active_matches: dict[str, Event] = {}
 
 
 @app.exception_handler(psycopg.Error)
@@ -50,34 +53,55 @@ def request_status(request_id: str, account: Account) -> dict:
     return status
 
 
+def _match_candidates(request_id: str, previous: list[dict]) -> tuple[list[dict], bool]:
+    request = db.get_request(request_id)
+    if request is None or request["status"] != "waiting":
+        return previous, True
+    for _ in range(2):
+        candidates = db.list_candidates(request_id)
+        if not candidates or candidates == previous:
+            return candidates, False
+        previous = candidates
+        decision = select_match(request, candidates)
+        if decision is None:
+            return previous, False
+        if not 0 <= decision.candidate_index < len(candidates):
+            logger.warning("Room matching returned an invalid candidate index")
+            return previous, True
+        offer = db.create_offer(request_id, candidates[decision.candidate_index], decision.reason, decision.provider)
+        if offer is not None:
+            return previous, True
+        # Another request may have taken the slot while the matcher was choosing.
+    return previous, False
+
+
 def match_request(request_id: str) -> None:
-    try:
-        request = db.get_request(request_id)
-        if request is None or request["status"] != "waiting":
+    # Collapse simultaneous retries into a fresh availability check, without
+    # losing a release that arrived while the model was working.
+    with _match_lock:
+        existing = _active_matches.get(request_id)
+        if existing is not None:
+            existing.set()
             return
-        previous_candidates = []
-        for _ in range(2):
-            candidates = db.list_candidates(request_id)
-            if not candidates or candidates == previous_candidates:
-                return
-            decision = select_match(request, candidates)
-            if decision is None:
-                return
-            if not 0 <= decision.candidate_index < len(candidates):
-                logger.warning("Room matching returned an invalid candidate index")
-                return
-            offer = db.create_offer(
-                request_id, candidates[decision.candidate_index], decision.reason, decision.provider
-            )
-            if offer is not None:
-                return
-            # Another request may have taken the slot while the matcher was choosing.
-            previous_candidates = candidates
+        pending = _active_matches[request_id] = Event()
+    previous: list[dict] = []
+    try:
+        while True:
+            pending.clear()
+            previous, complete = _match_candidates(request_id, previous)
+            with _match_lock:
+                if complete or not pending.is_set():
+                    del _active_matches[request_id]
+                    return
     except (db.Conflict, db.NotFound):
         # The request or opening changed while the model was choosing a candidate.
         return
     except (MatchingUnavailable, psycopg.Error, RuntimeError) as error:
         logger.warning("Room matching unavailable: %s", type(error).__name__)
+    finally:
+        with _match_lock:
+            if _active_matches.get(request_id) is pending:
+                del _active_matches[request_id]
 
 
 def ingest_release(event: dict | None, background_tasks: BackgroundTasks) -> dict:
@@ -138,7 +162,10 @@ def room_quote(
     now = datetime.now(UTC)
     if start_at < now:
         raise HTTPException(status_code=422, detail="Choose a start time in the future")
-    quote = db.get_room_quote(room_id, start_at, duration_minutes, now)
+    try:
+        quote = db.get_room_quote(room_id, start_at, duration_minutes, now)
+    except OverflowError as exc:
+        raise HTTPException(status_code=422, detail="Start time is outside the supported date range") from exc
     if quote is None:
         raise HTTPException(status_code=404, detail="Room not found")
     response.headers["Cache-Control"] = "no-store"
@@ -226,10 +253,10 @@ def demo_release(
 ) -> dict:
     if not demo_enabled():
         raise HTTPException(status_code=404, detail="Demo release is disabled")
-    room_id = body.room_id if body else None
-    if room_id is not None and db.get_room(room_id) is None:
+    room_id = (body.room_id if body else None) or current_venue().demo_room_id
+    if db.get_room(room_id) is None:
         raise HTTPException(status_code=404, detail="Room not found")
-    payload = demo_release_payload(room_id or current_venue().demo_room_id)
+    payload = demo_release_payload(room_id)
     event = FixtureDeviceAdapter().normalize_release(payload)
     return ingest_release(event, background_tasks)
 

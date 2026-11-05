@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { api, money } from "./market";
 import type { Room } from "./market";
 import { dayMs, osloDateTime, osloInstant, upcomingRoomStart } from "./oslo-time";
@@ -20,7 +20,8 @@ const presets = [
 ] as const;
 type Preset = (typeof presets)[number];
 type Selection = { date: string; time: string; preset?: Preset["id"] };
-type QuoteResult = { key: string; quote: Quote } | { key: string; error: string };
+type QuoteRequest = { path: string };
+type QuoteResult = { request: QuoteRequest; quote: Quote } | { request: QuoteRequest; error: string };
 
 function nextPreset(preset: Preset): Selection {
   const now = Date.now();
@@ -43,10 +44,12 @@ export default function QuotePreview({ room, searchDate }: { room: Room; searchD
   const [result, setResult] = useState<QuoteResult | null>(null);
   const [retry, setRetry] = useState(0);
   const instant = osloInstant(selection);
-  const startAt = instant?.toISOString();
+  const past = instant !== null && instant.getTime() <= Date.now();
+  const startAt = past ? undefined : instant?.toISOString();
   const query = startAt ? new URLSearchParams({ start_at: startAt, duration_minutes: String(duration) }) : null;
-  const requestKey = query ? `rooms/${encodeURIComponent(room.id)}/quote?${query}` : null;
-  const visibleResult = requestKey && result?.key === requestKey ? result : null;
+  const path = query ? `rooms/${encodeURIComponent(room.id)}/quote?${query}` : null;
+  const request = useMemo(() => path ? { path } : null, [path]);
+  const visibleResult = result?.request === request ? result : null;
 
   useEffect(() => {
     const start = upcomingRoomStart(searchDate);
@@ -54,28 +57,35 @@ export default function QuotePreview({ room, searchDate }: { room: Room; searchD
   }, [searchDate]);
 
   useEffect(() => {
-    if (!requestKey) return;
+    if (!request) return;
     const controller = new AbortController();
+    let timeout: number | undefined;
     const timer = window.setTimeout(() => {
-      api<Quote>(requestKey, { signal: controller.signal })
+      timeout = window.setTimeout(() => {
+        controller.abort();
+        setResult({ request, error: "The price estimate took too long." });
+      }, 8_000);
+      api<Quote>(request.path, { signal: controller.signal })
         .then((quote) => {
-          if (!controller.signal.aborted) setResult({ key: requestKey, quote });
+          if (!controller.signal.aborted) setResult({ request, quote });
         })
         .catch((error: unknown) => {
           if (!controller.signal.aborted) {
             setResult({
-              key: requestKey,
+              request,
               error: error instanceof Error ? error.message : "Couldn’t load a price estimate.",
             });
           }
-        });
+        })
+        .finally(() => window.clearTimeout(timeout));
     }, 140);
 
     return () => {
       window.clearTimeout(timer);
+      window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [requestKey, retry]);
+  }, [request, retry]);
 
   return (
     <section className={styles.preview} aria-labelledby={headingId}>
@@ -130,8 +140,10 @@ export default function QuotePreview({ room, searchDate }: { room: Room; searchD
             {visibleResult.error}{" "}
             <button type="button" onClick={() => { setResult(null); setRetry((value) => value + 1); }}>Try again</button>
           </p>
-        ) : requestKey ? (
+        ) : request ? (
           <p>Updating estimate…</p>
+        ) : past ? (
+          <p>Choose a start time in the future.</p>
         ) : (
           <p>{selection.date && selection.time ? "Choose a valid Oslo time." : "Choose a date and start time."}</p>
         )}

@@ -66,3 +66,26 @@ class RoomPricingTests(unittest.TestCase):
         self.assertEqual((last_minute["hourly_rate_ore"], last_minute["price_ore"]), (33_001, 24_751))
         self.assertIn("Last-minute discount", last_minute["reason"])
         self.assertIn("Room minimum applied", last_minute["reason"])
+
+    def test_peak_pricing_changes_at_the_oslo_hour_boundary(self):
+        cases = (
+            ("2026-07-06T08:59:59+02:00", 34_000),
+            ("2026-07-06T09:00:00+02:00", 48_000),
+            ("2026-07-06T15:59:59+02:00", 48_000),
+            ("2026-07-06T16:00:00+02:00", 34_000),
+        )
+        for start_at, expected_price in cases:
+            with self.subTest(start_at=start_at):
+                self.assertEqual(self.quote(datetime.fromisoformat(start_at))["price_ore"], expected_price)
+
+    def test_last_minute_discount_uses_elapsed_time_across_clock_change(self):
+        oslo = ZoneInfo("Europe/Oslo")
+        # The two occurrences of 02:30 on this date are an hour apart.
+        first = datetime(2026, 10, 25, 2, 30, tzinfo=oslo, fold=0)
+        second = datetime(2026, 10, 25, 2, 30, tzinfo=oslo, fold=1)
+        self.assertEqual(self.quote(second, now=first, minimum_hourly_rate_ore=1)["price_ore"], 32_000)
+
+        exactly_thirty_minutes = datetime(2026, 10, 25, 2, 0, tzinfo=oslo, fold=1)
+        quote = self.quote(second, now=exactly_thirty_minutes, minimum_hourly_rate_ore=1)
+        self.assertEqual(quote["price_ore"], 28_800)
+        self.assertIn("Last-minute discount", quote["reason"])

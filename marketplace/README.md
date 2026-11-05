@@ -77,7 +77,11 @@ Brighten lists a meeting room and a phone pod. Their capacities, equipment, and 
 
 Mesh’s Digs listings use Mesh Community’s room photography for Driv and its shared Gnist and Spark gallery. Listings without a verified image are shown without a room photograph. [Mesh Community’s Trondheim room gallery](https://meshcommunity.com/trondheim/meeting-event)
 
-The catalog also lists MVP rooms for 26 more Trondheim and Stjørdal venues: coworking spaces, hotels, and conference and culture venues such as Scandic Lerkendal, Britannia Hotel, Olavshallen, and Lager11. Each has its own `MARKETPLACE_VENUE` key in `backend/app/venues.py`. Names, addresses, room counts, and capacities come from public sources. Room names are generic unless the venue publishes them, and equipment and prices are placeholders until each venue confirms them. These rooms have no photos yet. Quality Hotel Augustin is seeded unpublished until it opens. See [the catalog migration](backend/app/migrations/011_trondheim_venue_catalog.sql).
+Research for 26 additional Trondheim and Stjørdal venues is stored as unpublished listings. The customer roster should confirm a venue before its rooms are published. Unpublishing these research listings preserves existing booking history. [Catalog research](backend/app/migrations/011_trondheim_venue_catalog.sql) · [Draft migration](backend/app/migrations/012_keep_unconfirmed_venue_leads_unpublished.sql)
+
+## Run backend checks
+
+From `marketplace/backend/`, run `uv run --locked python -m unittest discover -s tests -v`. Set `MARKETPLACE_TEST_DATABASE_URL` to a disposable PostgreSQL database to include the concurrent booking checks.
 
 ## Connect a device
 

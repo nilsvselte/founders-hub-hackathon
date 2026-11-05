@@ -9,7 +9,7 @@ import type { Room } from "../market";
 import styles from "./host.module.css";
 
 type Listing = Room & { published: boolean };
-type Release = { created: boolean; reason?: string | null };
+type Release = { created: boolean; opening_id?: string | null; reason?: string | null };
 const kinds = ["Studio", "Workshop", "Meeting room", "Boardroom"];
 
 function failureMessage(error: unknown) {
@@ -60,6 +60,8 @@ function HostDashboard() {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const editorHeading = useRef<HTMLHeadingElement>(null);
+  const mutationInFlight = useRef(false);
+  const releaseAttempts = useRef(new Map<string, { duration: number; id: string }>());
 
   useEffect(() => {
     const controller = new AbortController();
@@ -81,6 +83,8 @@ function HostDashboard() {
   }, [editor]);
 
   async function perform(key: string, operation: () => Promise<void>) {
+    if (mutationInFlight.current) return;
+    mutationInFlight.current = true;
     setBusy(key);
     setNotice("");
     setError("");
@@ -89,6 +93,7 @@ function HostDashboard() {
     } catch (failure) {
       setError(failureMessage(failure));
     } finally {
+      mutationInFlight.current = false;
       setBusy("");
     }
   }
@@ -145,11 +150,19 @@ function HostDashboard() {
     event.preventDefault();
     const duration_minutes = Number(new FormData(event.currentTarget).get("duration"));
     void perform(room.id, async () => {
+      const previous = releaseAttempts.current.get(room.id);
+      const id = previous?.duration === duration_minutes ? previous.id : crypto.randomUUID();
+      releaseAttempts.current.set(room.id, { duration: duration_minutes, id });
       const result = await api<Release>(`host/rooms/${encodeURIComponent(room.id)}/release`, {
-        method: "POST", body: JSON.stringify({ duration_minutes }),
+        method: "POST", body: JSON.stringify({ duration_minutes, release_id: id }),
       });
-      if (!result.created) throw new Error("The time could not be released. Try a different duration.");
-      setNotice(`${room.name} is open for ${duration_minutes} minutes, including turnover time.`);
+      if (!result.created && !(result.reason === "duplicate_release" && result.opening_id)) {
+        throw new Error("The time could not be released. Try again.");
+      }
+      releaseAttempts.current.delete(room.id);
+      setNotice(result.created
+        ? `${room.name} is open for ${duration_minutes} minutes, including turnover time.`
+        : `The release for ${room.name} was already recorded.`);
     });
   }
 

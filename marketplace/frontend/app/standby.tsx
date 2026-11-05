@@ -61,14 +61,14 @@ function describeWindow(start: string, end: string) {
 const requestPath = (id: string) => `standby-requests/${encodeURIComponent(id)}`;
 
 type StandbyProps = {
-  room: Room; requestId?: never; searchDate?: string; guests?: number;
+  room: Room; requestId?: never; searchDate?: string; guests?: number; browseQuery?: string;
 } | {
-  requestId: string; room?: never; searchDate?: never; guests?: never;
+  requestId: string; room?: never; searchDate?: never; guests?: never; browseQuery?: never;
 };
 
 export default function Standby(props: StandbyProps) {
   const { account, loading } = useAccount();
-  const query = new URLSearchParams();
+  const query = new URLSearchParams(props.browseQuery);
   if (props.searchDate) query.set("date", props.searchDate);
   if (props.guests) query.set("guests", String(props.guests));
   const returnTo = props.room

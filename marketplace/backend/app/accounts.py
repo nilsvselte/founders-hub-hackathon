@@ -2,16 +2,39 @@ import hashlib
 import os
 import re
 import secrets
+from collections.abc import Awaitable, Callable
 from threading import BoundedSemaphore
 from typing import Literal
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import BaseModel, SecretStr
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
+from pydantic import BaseModel, SecretStr, field_validator
 
 from . import db
 
-router = APIRouter(prefix="/auth", tags=["accounts"])
+
+class AccountRoute(APIRoute):
+    def get_route_handler(self) -> Callable[[Request], Awaitable[Response]]:
+        handler = super().get_route_handler()
+
+        async def handle(request: Request) -> Response:
+            try:
+                return await handler(request)
+            except RequestValidationError:
+                # FastAPI's default errors can include the full submitted body.
+                return JSONResponse(
+                    {"detail": "Enter valid account details"},
+                    status_code=422,
+                    headers={"Cache-Control": "no-store"},
+                )
+
+        return handle
+
+
+router = APIRouter(prefix="/auth", tags=["accounts"], route_class=AccountRoute)
 _COOKIE = "marketplace_session"
 _SESSION_SECONDS = 7 * 24 * 60 * 60
 _EMAIL = re.compile(r"[^\s@\x00]+@[^\s@\x00]+\.[^\s@\x00]+")
@@ -22,6 +45,16 @@ _HASH_SLOTS = BoundedSemaphore(4)
 class Credentials(BaseModel):
     email: str
     password: SecretStr
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def validate_utf8(cls, value: object) -> object:
+        if isinstance(value, str):
+            try:
+                value.encode("utf-8")
+            except UnicodeEncodeError:
+                raise ValueError("Enter valid text") from None
+        return value
 
 
 class Registration(Credentials):
