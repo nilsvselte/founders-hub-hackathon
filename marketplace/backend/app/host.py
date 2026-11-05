@@ -17,9 +17,18 @@ ShortText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1
 Description = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1800)]
 
 _COLUMNS = "id, name, city, venue_name AS venue, kind, description, image_key, capacity, equipment, hourly_rate_ore, published"
-_LAST_OCCUPANCY = """
+_LIVE_STATUS = """
     (SELECT jsonb_build_object('occupied', occupied, 'changed_at', changed_at)
-     FROM marketplace_room_occupancy WHERE room_id = marketplace_rooms.id) AS last_occupancy
+     FROM marketplace_room_occupancy WHERE room_id = marketplace_rooms.id) AS last_occupancy,
+    (SELECT jsonb_build_object('start_at', start_at, 'end_at', end_at, 'reference', booking_reference)
+     FROM marketplace_offers
+     WHERE room_id = marketplace_rooms.id AND confirmed_at IS NOT NULL
+       AND start_at <= now() AND end_at > now()
+     ORDER BY start_at DESC LIMIT 1) AS current_booking,
+    (SELECT jsonb_build_object('id', b.id, 'start_at', b.start_at, 'end_at', COALESCE(o.start_at, b.end_at))
+     FROM marketplace_device_blocks b LEFT JOIN marketplace_openings o ON o.id = b.opening_id
+     WHERE b.room_id = marketplace_rooms.id AND b.start_at <= now() AND COALESCE(o.start_at, b.end_at) > now()
+     ORDER BY b.start_at DESC LIMIT 1) AS active_block
 """
 
 
@@ -28,9 +37,24 @@ class HostRoomOccupancy(BaseModel):
     changed_at: AwareDatetime
 
 
+class HostRoomBooking(BaseModel):
+    start_at: AwareDatetime
+    end_at: AwareDatetime
+    reference: str
+
+
+class HostRoomBlock(BaseModel):
+    id: UUID
+    start_at: AwareDatetime
+    end_at: AwareDatetime
+
+
 class HostRoom(Room):
     published: bool
     last_occupancy: HostRoomOccupancy | None = None
+    # Confirmed booking or scheduled block covering the current moment, if any.
+    current_booking: HostRoomBooking | None = None
+    active_block: HostRoomBlock | None = None
 
 
 class HostRoomInput(BaseModel):
@@ -86,7 +110,7 @@ HostAccount = Annotated[Account, Depends(require_host)]
 
 
 def _owned_room(connection, room_id: str, owner_id: UUID, *, lock: bool = False) -> dict:
-    query = f"SELECT {_COLUMNS}, {_LAST_OCCUPANCY} FROM marketplace_rooms WHERE id = %s AND owner_id = %s"
+    query = f"SELECT {_COLUMNS}, {_LIVE_STATUS} FROM marketplace_rooms WHERE id = %s AND owner_id = %s"
     if lock:
         query += " FOR UPDATE"
     room = connection.execute(query, (room_id, owner_id)).fetchone()
@@ -108,7 +132,7 @@ def list_host_rooms(host: HostAccount, response: Response) -> list[dict]:
     response.headers["Cache-Control"] = "no-store"
     with db._connect() as connection:
         return connection.execute(
-            f"SELECT {_COLUMNS}, {_LAST_OCCUPANCY} FROM marketplace_rooms WHERE owner_id = %s ORDER BY name, id",
+            f"SELECT {_COLUMNS}, {_LIVE_STATUS} FROM marketplace_rooms WHERE owner_id = %s ORDER BY name, id",
             (host.id,),
         ).fetchall()
 
