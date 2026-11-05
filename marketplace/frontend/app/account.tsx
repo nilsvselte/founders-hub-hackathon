@@ -38,7 +38,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     const version = ++revision.current;
-    const current = await api<Account>("auth/me").catch(() => null);
+    let current = await api<Account>("auth/me").catch(() => null);
+    // Demo: signed-out bookers become the shared demo guest automatically (off when the backend flag is off).
+    if (!current && typeof window !== "undefined" && !/^\/(host|login|sign|register|account|live)/.test(window.location.pathname)) {
+      current = await api<Account>("auth/demo-session", { method: "POST" }).catch(() => null);
+    }
     if (version === revision.current) {
       updateAccount(current);
       setLoading(false);
