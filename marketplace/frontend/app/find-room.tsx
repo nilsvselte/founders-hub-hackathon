@@ -65,7 +65,7 @@ export default function FindRoom({ children }: { children?: ReactNode }) {
     const hour = Math.min(Number(now.time?.slice(0, 2) ?? 9) + 1, 20);
     setCriteria({
       date: now.date, from: `${String(hour).padStart(2, "0")}:00`, to: `${String(Math.min(hour + 3, 23)).padStart(2, "0")}:00`,
-      duration: 60, people: 4, equipment: [], maxPrice: null,
+      duration: 30, people: 4, equipment: [], maxPrice: null,
     });
     api<Room[]>("rooms").then(setRooms).catch(() => {});
   }, []);
@@ -81,30 +81,42 @@ export default function FindRoom({ children }: { children?: ReactNode }) {
     event.preventDefault();
     if (!criteria) return;
     setError("");
-    const starts = slotStarts(criteria);
-    if (!starts.length) {
+    const from = osloInstant({ date: criteria.date, time: criteria.from });
+    const until = osloInstant({ date: criteria.date, time: criteria.to });
+    const durationMs = criteria.duration * 60_000;
+    const earliest = new Date(Math.max(from?.getTime() ?? 0, Date.now() + 60_000));
+    if (!from || !until || until.getTime() - earliest.getTime() < durationMs) {
       setError("Choose a future time window at least as long as the meeting.");
       return;
     }
     setState("searching");
     try {
-      const batches = await Promise.all(starts.map((start) => api<{ suggestions: Suggestion[] }>("suggestions", {
+      const suggest = (start: Date, end: Date, duration?: number) => api<{ suggestions: Suggestion[] }>("suggestions", {
         method: "POST",
         body: JSON.stringify({
           start_at: start.toISOString(),
-          end_at: new Date(start.getTime() + criteria.duration * 60_000).toISOString(),
+          end_at: end.toISOString(),
+          duration_minutes: duration,
           party_size: Math.max(2, criteria.people),
           equipment: criteria.equipment,
           ...(criteria.maxPrice ? { max_price_ore: Math.round(criteria.maxPrice * 100) } : {}),
         }),
-      }).catch((failure) => {
-        if (failure instanceof ApiError && failure.status === 422) return { suggestions: [] };
-        throw failure;
-      })));
-      // Earliest slot first, backend rank within a slot; one entry per room.
-      const seen = new Set<string>();
-      const merged = batches.flatMap((batch) => batch.suggestions).filter((s) => !seen.has(s.room_id) && seen.add(s.room_id));
-      setResults(merged.slice(0, 6));
+      });
+      const result = await suggest(earliest, until, criteria.duration).catch(async (failure) => {
+        if (!(failure instanceof ApiError && failure.status === 422)) throw failure;
+        // Older API deployments accept only exact meeting times.
+        const batches = await Promise.all(slotStarts(criteria).map((start) =>
+          suggest(start, new Date(start.getTime() + durationMs)).catch((slotFailure) => {
+            if (slotFailure instanceof ApiError && slotFailure.status === 422) return { suggestions: [] };
+            throw slotFailure;
+          }),
+        ));
+        const seen = new Set<string>();
+        const suggestions = batches.flatMap((batch) => batch.suggestions)
+          .filter((room) => !seen.has(room.room_id) && seen.add(room.room_id));
+        return { suggestions: suggestions.slice(0, 6) };
+      });
+      setResults(result.suggestions);
       setState("done");
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Something went wrong. Please try again.");
@@ -242,6 +254,7 @@ export default function FindRoom({ children }: { children?: ReactNode }) {
           ) : (
             <div className="browse-empty">
               <p>No open room fits right now.</p>
+              <Link href="/#browse">Browse all listed rooms</Link>
               {criteria?.maxPrice ? (
                 <button type="button" onClick={standby} disabled={!!booking}>
                   {booking === "standby" ? "Sending…" : "Leave a standby request with these criteria"}

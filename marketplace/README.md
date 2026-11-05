@@ -69,6 +69,8 @@ Sign in as a renter and open **Calendar assistant** at `/agent` to create or rev
 
 The public catalog shows published listings across venues. A room-specific standby request can only match an opening for that room. For the venue API and default room used by a demo release without an explicit room ID, set `MARKETPLACE_VENUE` to `digs` (Mesh at Digs, the default), `kowork` (Kowork at Kjøpmannsgata 40 in Trondheim), or `brighten` (Brighten at Bakke Bydelshus, Nordre Berggate 2).
 
+**Find a room** searches released openings throughout the selected time window for a slot of the requested duration. Hosts release bookable time from their dashboard. Published listings are also available under **Browse all rooms**.
+
 To use Kowork as the default pilot in Docker Compose, run this from `marketplace/`.
 
 ```sh

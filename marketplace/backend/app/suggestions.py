@@ -42,6 +42,10 @@ class SuggestionInput(BaseModel):
 
     start_at: AwareDatetime
     end_at: AwareDatetime
+    duration_minutes: int | None = Field(
+        default=None, ge=15, le=720, strict=True,
+        description="Meeting length for a flexible search between start_at and end_at.",
+    )
     party_size: int = Field(ge=2, le=100, strict=True)
     equipment: list[EquipmentName] = Field(default_factory=list, max_length=15)
     rough_area: Annotated[str, StringConstraints(strip_whitespace=True, max_length=80)] | None = None
@@ -66,15 +70,17 @@ class SuggestionInput(BaseModel):
         except OverflowError as exc:
             raise ValueError("Meeting times are outside the supported date range") from exc
         duration, remainder = divmod(end - start, _ONE_MINUTE)
-        if remainder or not 15 <= duration <= 720:
+        if self.duration_minutes is None and (remainder or not 15 <= duration <= 720):
             raise ValueError("Meeting duration must be 15 to 720 whole minutes")
+        if self.duration_minutes is not None and (duration < self.duration_minutes or end - start > timedelta(hours=25)):
+            raise ValueError("The search window must fit the meeting and be at most 25 hours")
         if start <= datetime.now(UTC):
             raise ValueError("The meeting must start in the future")
         return self
 
     @property
-    def duration_minutes(self) -> int:
-        return (self.end_at.astimezone(UTC) - self.start_at.astimezone(UTC)) // _ONE_MINUTE
+    def meeting_duration_minutes(self) -> int:
+        return self.duration_minutes or (self.end_at.astimezone(UTC) - self.start_at.astimezone(UTC)) // _ONE_MINUTE
 
 
 class RoomSuggestion(BaseModel):
@@ -162,22 +168,24 @@ def suggest_rooms(
     response.headers["Cache-Control"] = "no-store"
     saved = load_preferences(account.id)
     preferences = saved.preferences
+    duration = body.meeting_duration_minutes
     budget = body.max_price_ore or _MAX_BOOKING_PRICE_ORE
     if preferences.max_hourly_ore is not None:
-        budget = min(budget, preferences.max_hourly_ore * body.duration_minutes // 60)
+        budget = min(budget, preferences.max_hourly_ore * duration // 60)
     candidates = db.list_meeting_candidates(
         start_at=body.start_at,
         end_at=body.end_at,
-        duration_minutes=body.duration_minutes,
+        duration_minutes=duration,
         party_size=body.party_size,
         equipment=db._equipment([*body.equipment, *preferences.equipment]),
         max_price_ore=budget,
         avoid_venues=preferences.avoid_venues,
     )
     area = (body.rough_area or saved.about.home_area).casefold()
+    limit = 3 if body.duration_minutes is None else 6
     suggestions = [
         _format_candidate(candidate, body, area, preferences)
-        for candidate in sorted(candidates, key=lambda candidate: _rank(candidate, area, preferences))[:3]
+        for candidate in sorted(candidates, key=lambda candidate: _rank(candidate, area, preferences))[:limit]
     ]
     if suggestions:
         return {"suggestions": suggestions}
