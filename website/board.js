@@ -1,4 +1,4 @@
-// Hero board: editable preferences, live agent re-ranking, and the Release → Quote → Accept → Confirmed moment.
+// Hero board: editable preferences, live agent re-ranking, and simulated automatic booking.
 (function board() {
   const D = window.BOARD_DATA;
   const root = document.querySelector('.board');
@@ -7,7 +7,6 @@
   const log = document.getElementById('log');
   const quote = document.getElementById('quote');
   const rel = document.getElementById('rel');
-  const acc = document.getElementById('accept');
   const resetBtn = document.getElementById('reset');
   const status = document.getElementById('agent-status');
   const more = document.getElementById('more');
@@ -21,8 +20,7 @@
   const hhmm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
   const KIT = { screen: 'screen', whiteboard: 'whiteboard', video: 'video' };
 
-  let prefs, released, booked, timers = [], logSeq = 0, auto = null, holdTimer = null;
-  const at = (ms, fn) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
+  let prefs, released, booked, logSeq = 0, auto = null;
 
   /* ---------- Preferences form ---------- */
   function readForm() {
@@ -175,7 +173,7 @@
     while (log.children.length > 5) log.firstChild.remove();
   }
   // Stream lines one after another; a newer stream cancels an older one.
-  // A "hard" stream (release, accept) survives later re-ranks; only Reset cancels it.
+  // The release stream survives later re-ranks. Reset cancels it.
   let hardSeq = 0;
   function stream(steps, hard) {
     const seq = hard ? hardSeq : ++logSeq;
@@ -218,7 +216,7 @@
     ]);
   }
 
-  /* ---------- Release → Quote → Accept → Confirmed ---------- */
+  /* ---------- Release and automatic booking ---------- */
   function release() {
     if (released) return;
     rel.disabled = true;
@@ -234,49 +232,34 @@
         const me = ranked.find(x => x.room === r);
         const pos = ranked.indexOf(me) + 1;
         line(pos === 1 ? `${r.name} freed at ${hhmm(D.now)} · new best fit, ${me.fit}%` : `${r.name} ranks #${pos} of ${count} · ${me.fit}% fit`, 'ok');
-        thinking(false);
       }],
       [900, () => {
-        line(`Quote ${r.price} kr (list ${r.list}), inside Digs' limits. Holding 2 min.`);
-        showQuote(r);
-      }]
-    ], true);
-  }
-  function showQuote(r) {
-    quote.hidden = false;
-    quote.classList.remove('done');
-    quote.querySelector('.q-room').textContent = `${r.name} · ${r.from}–${r.to}`;
-    quote.querySelector('.q-price').innerHTML = `${r.price} kr <s>${r.list} kr</s>`;
-    acc.disabled = false; acc.textContent = 'Accept';
-    let left = 120;
-    const note = quote.querySelector('.q-note');
-    const tick = () => { note.textContent = `Held for you · ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`; };
-    tick();
-    clearInterval(holdTimer);
-    holdTimer = setInterval(() => { left = Math.max(0, left - 1); tick(); }, 1000);
-  }
-  function accept() {
-    if (!released || booked) return;
-    acc.disabled = true; acc.textContent = 'Checking…';
-    clearInterval(holdTimer);
-    thinking(true);
-    stream([
-      [0, () => line(`Rechecking ${released.name} is still free…`)],
-      [800, () => {
-        booked = true;
-        render();
-        acc.textContent = 'Confirmed';
-        quote.classList.add('done');
-        quote.querySelector('.q-note').textContent = 'Confirmed · door code sent';
-        line(`Confirmed. ${released.name} is yours, ${released.from}–${released.to}.`, 'ok');
+        confirmRelease(r);
         thinking(false);
       }]
     ], true);
   }
 
+  function confirmRelease(r) {
+    const start = Math.max(toMin(r.from), toMin(prefs.from) - prefs.flex);
+    const end = start + prefs.duration;
+    const latest = Math.min(toMin(r.to), toMin(prefs.to) + prefs.flex);
+    if (end > latest || r.seats < prefs.people || r.price > prefs.budget || prefs.equip.some(kit => !r.equip.includes(kit))) {
+      line(`${r.name} doesn't meet your request. Still watching.`);
+      return;
+    }
+
+    const time = `${hhmm(start)}–${hhmm(end)}`;
+    booked = true;
+    render();
+    quote.querySelector('.q-room').textContent = `${r.name} · ${time}`;
+    quote.querySelector('.q-price').innerHTML = `${r.price} kr <s>${r.list} kr</s>`;
+    quote.hidden = false;
+    line(`Confirmed. ${r.name}, ${time}, for ${r.price} kr.`, 'ok');
+  }
+
   function reset() {
-    timers.forEach(clearTimeout); timers = [];
-    clearInterval(holdTimer);
+    clearTimeout(debounce);
     logSeq++; hardSeq++;
     released = null; booked = false;
     writeForm(D.defaults);
@@ -287,7 +270,6 @@
     line(`Agent: watching ${D.rooms.length} rooms at Digs for you…`);
     quote.hidden = true;
     rel.disabled = false;
-    acc.disabled = false; acc.textContent = 'Accept';
     thinking(false);
     render();
   }
@@ -312,7 +294,6 @@
     root.classList.toggle('prefs-open', open);
   });
   rel.addEventListener('click', release);
-  acc.addEventListener('click', accept);
   resetBtn.addEventListener('click', () => { stopAuto(); reset(); });
 
   /* ---------- Autoplay until someone touches the board ---------- */
@@ -324,7 +305,6 @@
     const a = (ms, fn) => auto.push(setTimeout(fn, ms));
     a(1600, () => { const v = form.querySelector('[data-equip="video"]'); press(v); v.click(); });
     a(4200, () => { press(rel); release(); });
-    a(8600, () => { press(acc); accept(); });
     a(14000, () => { reset(); runAuto(); });
   }
   ['pointerdown', 'keydown'].forEach(ev => root.addEventListener(ev, e => { if (e.isTrusted) stopAuto(); }, true));

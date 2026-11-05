@@ -23,6 +23,7 @@ class Room(BaseModel):
 
 class StandbyRequestInput(BaseModel):
     room_id: RoomId | None = None
+    auto_confirm: bool = Field(default=True, strict=True)
     earliest_start: AwareDatetime
     latest_end: AwareDatetime
     duration_minutes: int = Field(ge=1, le=720)
@@ -70,6 +71,7 @@ class StandbyRequestStatus(BaseModel):
     room_id: str | None
     room_name: str | None
     status: Literal["waiting", "offered", "confirmed", "expired"]
+    auto_confirm: bool = False
     offer: OfferStatus | None = None
     booking_reference: str | None = None
     earliest_start: AwareDatetime

@@ -54,7 +54,7 @@ class DeviceWebhookTests(unittest.IsolatedAsyncioTestCase):
             patch("app.main.db.record_release_request",
                   return_value={"created": True, "opening_id": opening_id}) as record,
             patch("app.main.db.list_pending_request_ids", return_value=["waiting-request"]) as pending,
-            patch("app.main.match_request") as match,
+            patch("app.main.run_match_in_background") as match,
         ):
             status, result = await self.post(payload)
 
@@ -78,7 +78,7 @@ class DeviceWebhookTests(unittest.IsolatedAsyncioTestCase):
             patch("app.main.db.list_pending_request_ids", side_effect=[
                 psycopg.OperationalError("transient DB failure"), ["waiting-request"],
             ]),
-            patch("app.main.match_request") as match,
+            patch("app.main.run_match_in_background") as match,
         ):
             status, _ = await self.post(payload)
             self.assertEqual(status, 503)
@@ -98,7 +98,7 @@ class DeviceWebhookTests(unittest.IsolatedAsyncioTestCase):
             patch("app.main.db.record_occupancy",
                   return_value={"created": False, "reason": "occupancy_recorded"}) as record,
             patch("app.main.db.record_release") as release,
-            patch("app.main.match_request") as match,
+            patch("app.main.run_match_in_background") as match,
         ):
             status, result = await self.post(payload)
 

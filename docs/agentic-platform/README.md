@@ -6,31 +6,29 @@ Code: the matcher is in [`marketplace/backend/app/matching.py`](../../marketplac
 
 ## The core rule
 
-Agents choose and explain; the marketplace decides. Availability, price limits, holds, and booking confirmation live in the marketplace backend, so every agent works from the same rules as the website. An agent never books on its own say-so: the backend rechecks the slot and confirms.
+Agents choose and explain. The marketplace owns availability, price limits, holds, and booking confirmation. The backend checks the slot and enforces the scope of the renter’s approval in either booking flow.
 
 ## Standby matching (built)
 
 The first agent flow, live in the marketplace today:
 
 1. The host schedules the room's occupied block. When staff press **Release room** on the Atech device during that block, the marketplace makes the remaining time available after a turnaround buffer.
-2. A buyer leaves a standby request for one room or lets standbyroom look across venues. The request includes a time window, duration, group size, equipment needs, budget, and any flexibility. The marketplace checks available slots as openings come in.
-3. The marketplace calculates a quote within the room's pricing limits and holds the slot. The renter accepts the quote, and the marketplace rechecks availability before confirming the booking. If the slot disappears, the agent looks for the next viable option.
+2. A renter selects **Book when available** for one room or lets standbyroom look across venues. This authorizes a booking within the selected room scope, time window, duration, group size, equipment needs, and maximum total price.
+3. The marketplace checks eligible openings, calculates the quote, and confirms the booking in the same transaction that reserves the slot. If another booking takes the opening, the request waits for another eligible match. Existing manual requests still show a held offer that the renter must accept.
 
-The backend first filters openings down to the ones that fit. Claude then sees only those validated options (room, time, price, capacity, equipment; no database IDs) and calls one of two tools: `propose_match` (pick one, explain the fit in a sentence) or `no_match`. Without an API key, demo mode uses a deterministic matcher instead.
+The backend first filters openings to the ones that fit. Pydantic AI passes the eligible room, time, price, capacity, and equipment to Claude, which chooses an option with `propose_match` or returns `no_match`. The live matcher defaults to Claude Sonnet 5.5. Keyless demo mode picks the lowest-priced eligible opening deterministically. [Matcher setup](../../marketplace/README.md#try-the-booking-demo)
 
-## The marketplace agent (planned)
+## Calendar assistant (local)
 
-A personal agent that works ahead of you instead of waiting for a request:
+Claude uses its Google Calendar connector and the marketplace’s local stdio MCP server. Renters issue or revoke an assistant token from **Calendar assistant** at `/agent` and manage their profile, room preferences, and agent settings at `/account/preferences`.
 
-1. **Reads your calendar** and finds upcoming meetings that have no room.
-2. **Suggests a room** for each one, weighing:
-   - attendees: how many, and where they are coming from;
-   - location: close to the attendees or to where you will be before and after;
-   - time: the meeting's slot and any slack around it;
-   - your preferences: price ceiling, favourite venues, equipment, quiet vs. social.
-3. **Asks you to approve.** You see the room, the price, and why it fits. Nothing is booked until you say yes; then the marketplace holds and confirms the slot as above.
+1. The assistant looks for upcoming in-person meetings that need a room and passes the meeting slot, headcount, and an optional rough area to the marketplace. Calendar titles, attendee identities, and descriptions stay in the calendar tool.
+2. Read-only suggestions rank up to three available options using the meeting criteria and the renter’s preferences. Each option includes the room, time, price, and a reason.
+3. The renter approves a specific room, time, and maximum total price. The assistant uses the manual hold-and-confirm flow. A different option requires separate approval.
 
-It lives in [`marketplace/agent/`](../../marketplace/agent/).
+[Run the local assistant](../../marketplace/agent/README.md)
+
+The assistant reads a compact account summary through `GET /me/agent-context`. It includes matching filters, preferences, and suggestion settings. It omits the renter’s name, email, account ID, and team name, and rounds saved coordinates to a rough area. When a standby request omits equipment or a budget, the backend uses saved defaults where available and preserves explicitly submitted values. [Account preferences](../../marketplace/agent/.agents/skills/preferences/SKILL.md)
 
 ## Agents that book through the marketplace (planned)
 
@@ -51,15 +49,13 @@ Atech boards report presence through the [device server](../../device/README.md)
 
 Each room has a base hourly rate and a minimum and maximum set by the host. The marketplace adjusts the rate by when the booking starts (weekday peak, off-peak, weekend) and gives a last-minute discount for starts within 30 minutes, always clamped to the host's limits. Every quote carries a plain-language reason. Agents compare quotes against the user's budget and can point out a cheaper nearby slot; they never set prices themselves.
 
-## Calendar connection (planned)
+## Calendar connection
 
-The marketplace agent reads Google Calendar in one of three ways:
+- **Claude connector:** Claude reads calendar events in the renter’s chat and calls the local marketplace tools for suggestions and approved bookings.
+- **Local scan:** a renter can preview eligible meetings from a local `.ics` export. The scanner checks the next seven days for timed meetings of at least 15 minutes with two or more people and no room, physical location, or video link. Its output contains meeting times, headcount, and an optional area.
+- **Add to Google Calendar:** confirmed marketplace bookings open a prefilled event draft that the renter can save.
 
-- **Assistant mode (demo):** the user's own Claude chat with the Google Calendar connector reads and updates events. Free on the subscription, but it works only inside that user's chat.
-- **ICS link:** the calendar's secret iCal address, read by the backend. Read-only and free; the link exposes the whole calendar, so the demo uses a throwaway account.
-- **Google OAuth:** read scope `calendar.events.readonly`, write scope `calendar.events` asked for only at first booking. Gives event ids and lets the agent write the booked room back. Microsoft 365 via Graph comes later.
-
-A meeting **needs a room** when it is upcoming, timed (not all-day), at least 15 minutes, has 2+ people, the user has not declined it, and it has no room resource, no physical location, and no video link. Only start time, length, headcount, and a rough area leave the user's side; titles, names, and emails stay private. After booking, the agent writes the room's address into the event's location and the booking ref into its description, without notifying attendees.
+**Planned:** product-managed Google OAuth, scheduled calendar scans, and live write-back to existing events. The local helper prepares an update that keeps the event’s times and attendees and adds the room location and reference without notifying attendees. The marketplace does not submit the update today.
 
 How-to: [`calendar-scan`](../../marketplace/agent/.agents/skills/calendar-scan/SKILL.md), [`calendar-write-back`](../../marketplace/agent/.agents/skills/calendar-write-back/SKILL.md).
 
@@ -70,11 +66,14 @@ What an agent can do through the marketplace, and what exists today:
 | Action | Approval | Today |
 | --- | --- | --- |
 | Search rooms, get a quote | none (read-only) | built: `GET /rooms`, `GET /rooms/{id}/quote` |
-| Suggest top 3 rooms for a meeting | none (read-only) | planned: `POST /suggestions` |
-| Read or set preferences (price ceiling, room types, equipment, venues) | user edits them | built: `GET/PUT /me/preferences`; the agent reads `GET /me/agent-context` |
-| Hold and book a room | user's yes to that room, time, and price | built: standby request → offer → accept |
-| List or cancel bookings | user's yes to cancel | planned |
+| Suggest up to three rooms for a meeting | none (read-only) | built: `POST /suggestions` |
+| Read matching preferences and agent context | none (read-only) | built: `GET /me/agent-context` |
+| Read or edit account preferences | renter uses `/account/preferences` | built: `GET/PUT /me/preferences` |
+| Automatically confirm a matching opening | renter chooses **Book when available** with limits | built: renter standby request |
+| Hold and book a suggested room | renter approves that room, time, and price | built: local MCP `hold_room` and `confirm_booking` |
+| List bookings | none (read-only) | built: local MCP `list_bookings` |
+| Cancel bookings | renter approves cancellation | planned |
 
-Agents reach these through a **marketplace MCP server** (planned) in front of the backend. Read-only tools are marked read-only; hold, book, and cancel are marked destructive so the client asks first. An agent signs in with a per-user API token the user can revoke, and outside agents ("Bnb agents") get the same openings, quotes, and rules as a human renter. There are no payments, and the agent's reasoning runs in the user's own Claude chat, so the marketplace makes no paid model calls.
+The local MCP server uses a per-renter token and marks search, quotes, suggestions, and history as read-only. Hold and confirmation request explicit approval. In the keyless calendar demo, Claude reasons in the renter’s chat and the marketplace uses deterministic matching.
 
 How-to: [`marketplace/agent/AGENTS.md`](../../marketplace/agent/AGENTS.md) and its skills [`preferences`](../../marketplace/agent/.agents/skills/preferences/SKILL.md), [`room-matching`](../../marketplace/agent/.agents/skills/room-matching/SKILL.md), [`booking`](../../marketplace/agent/.agents/skills/booking/SKILL.md), [`marketplace-mcp`](../../marketplace/agent/.agents/skills/marketplace-mcp/SKILL.md).

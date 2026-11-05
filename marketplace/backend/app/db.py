@@ -1,5 +1,6 @@
 import os
 from datetime import UTC, date, datetime, time, timedelta
+from itertools import islice
 from pathlib import Path
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
@@ -26,7 +27,9 @@ _OSLO = ZoneInfo("Europe/Oslo")
 _ROOM_COLUMNS = "id, name, city, venue_name AS venue, kind, description, image_key, capacity, equipment, hourly_rate_ore"
 _OPENING_COLUMNS = """
     o.id AS opening_id, o.room_id, r.venue, o.start_at AS opening_start, o.end_at AS opening_end,
-    r.name AS room_name, r.venue_name AS room_venue, r.city AS room_city, r.capacity, r.equipment, r.published,
+    CASE WHEN r.owner_id IS NULL THEN r.venue END AS catalog_venue_id,
+    r.name AS room_name, r.venue_name AS room_venue, r.city AS room_city, r.kind AS room_kind,
+    r.capacity, r.equipment, r.published,
     r.hourly_rate_ore, r.minimum_hourly_rate_ore, r.maximum_hourly_rate_ore
 """
 
@@ -138,8 +141,8 @@ def create_request(data: dict, user_id: UUID) -> str:
             """
             INSERT INTO marketplace_requests
                 (id, earliest_start, latest_end, duration_minutes, party_size, equipment,
-                 max_price_ore, preferences, user_id, room_id, venue)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                 max_price_ore, preferences, user_id, room_id, venue, auto_confirm)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 request_id,
@@ -153,6 +156,7 @@ def create_request(data: dict, user_id: UUID) -> str:
                 user_id,
                 room_id,
                 venue_id,
+                data.get("auto_confirm", False),
             ),
         )
     return str(request_id)
@@ -507,18 +511,20 @@ def _candidate(opening, request, start_at, end_at, now):
     if end_at - start_at != timedelta(minutes=request["duration_minutes"]):
         return None
     try:
-        price = _quote(opening, request["duration_minutes"], start_at, now)["price_ore"]
+        quote = _quote(opening, request["duration_minutes"], start_at, now)
     except OverflowError:
         return None
-    if price > request["max_price_ore"]:
+    if quote["price_ore"] > request["max_price_ore"]:
         return None
     return _json({
         **{key: opening[key] for key in (
-            "opening_id", "room_id", "room_name", "room_venue", "room_city", "capacity", "equipment",
+            "opening_id", "room_id", "room_name", "room_venue", "room_city", "room_kind", "capacity", "equipment",
         )},
         "start_at": start_at,
         "end_at": end_at,
-        "price_ore": price,
+        "price_ore": quote["price_ore"],
+        "venue_id": opening["catalog_venue_id"],
+        "quote": quote,
     })
 
 
@@ -565,41 +571,76 @@ def list_candidates(request_id: str) -> list[dict]:
         now = datetime.now(UTC)
         if not request or _active_offer(connection, request_id, now):
             return []
-        openings = connection.execute(
-            f"""
-            SELECT {_OPENING_COLUMNS}
-            FROM marketplace_openings o
-            JOIN marketplace_rooms r ON r.id = o.room_id
-            WHERE o.end_at > GREATEST(%s, %s) AND o.start_at < %s
-              AND r.published AND r.city IS NOT NULL AND r.capacity >= %s AND r.equipment @> %s::text[]
-              AND o.room_id = COALESCE(%s, o.room_id)
-              AND (%s::text IS NULL OR r.venue = %s)
-            ORDER BY o.start_at, o.id
-            """,
-            (
-                now, request["earliest_start"], request["latest_end"], request["party_size"],
-                request["equipment"], request["room_id"], request["venue"], request["venue"],
-            ),
-        ).fetchall()
-        duration = timedelta(minutes=request["duration_minutes"])
-        earliest_start = _datetime(request["earliest_start"])
-        latest_end = _datetime(request["latest_end"])
-        candidates = []
-        for opening in openings:
-            start_at = max(_datetime(opening["opening_start"]), earliest_start, now + timedelta(minutes=1))
-            end_at = min(_datetime(opening["opening_end"]), latest_end)
-            if end_at - start_at < duration:
-                continue
-            busy = _busy(connection, opening["room_id"], start_at, end_at, now)
-            for gap_start, gap_end in _gaps(start_at, end_at, busy):
-                for start in _candidate_starts(gap_start, gap_end - duration):
-                    candidate = _candidate(opening, request, start, start + duration, now)
-                    if candidate:
-                        candidates.append(candidate)
-                        if len(candidates) >= _MAX_CANDIDATES:
-                            return candidates
-                        break
-        return candidates
+        return list(islice(_available_candidates(connection, request, now), _MAX_CANDIDATES))
+
+
+def list_meeting_candidates(
+    *,
+    start_at: datetime,
+    end_at: datetime,
+    duration_minutes: int,
+    party_size: int,
+    equipment: list[str],
+    max_price_ore: int,
+    avoid_venues: list[str],
+) -> list[dict]:
+    request = {
+        "room_id": None,
+        "venue": None,
+        "earliest_start": start_at,
+        "latest_end": end_at,
+        "duration_minutes": duration_minutes,
+        "party_size": party_size,
+        "equipment": equipment,
+        "max_price_ore": max_price_ore,
+    }
+    with _connect() as connection:
+        candidates = _available_candidates(connection, request, datetime.now(UTC), avoid_venues=avoid_venues)
+        unique_rooms = {}
+        for candidate in candidates:
+            unique_rooms.setdefault(candidate["room_id"], candidate)
+        return list(unique_rooms.values())
+
+
+def _available_candidates(connection, request, now, *, avoid_venues=()):
+    openings = connection.execute(
+        f"""
+        SELECT {_OPENING_COLUMNS}
+        FROM marketplace_openings o
+        JOIN marketplace_rooms r ON r.id = o.room_id
+        WHERE o.end_at > GREATEST(%s, %s) AND o.start_at < %s
+          AND r.published AND r.city IS NOT NULL AND r.capacity >= %s AND r.equipment @> %s::text[]
+          AND o.room_id = COALESCE(%s, o.room_id)
+          AND (%s::text IS NULL OR r.venue = %s)
+          AND (r.owner_id IS NOT NULL OR r.venue IS NULL OR r.venue <> ALL(%s::text[]))
+        ORDER BY o.start_at, o.id
+        """,
+        (
+            now, request["earliest_start"], request["latest_end"], request["party_size"],
+            request["equipment"], request["room_id"], request["venue"], request["venue"], list(avoid_venues),
+        ),
+    ).fetchall()
+    duration = timedelta(minutes=request["duration_minutes"])
+    earliest_start = _datetime(request["earliest_start"])
+    latest_end = _datetime(request["latest_end"])
+    for opening in openings:
+        start_at = max(_datetime(opening["opening_start"]), earliest_start, now + timedelta(minutes=1))
+        end_at = min(_datetime(opening["opening_end"]), latest_end)
+        if end_at - start_at < duration:
+            continue
+        busy = _busy(connection, opening["room_id"], start_at, end_at, now)
+        for gap_start, gap_end in _gaps(start_at, end_at, busy):
+            for start in _candidate_starts(gap_start, gap_end - duration):
+                candidate = _candidate(opening, request, start, start + duration, now)
+                if candidate:
+                    yield candidate
+                    break
+
+
+def _booking_reference(venue: str | None, offer_id: UUID) -> str:
+    known_venue = VENUES.get(venue)
+    prefix = known_venue.booking_prefix if known_venue else "ROOM"
+    return f"{prefix}-{offer_id.hex[:12].upper()}"
 
 
 def create_offer(request_id: str, candidate: dict, reason: str, provider: str) -> dict | None:
@@ -625,16 +666,20 @@ def create_offer(request_id: str, candidate: dict, reason: str, provider: str) -
         if not actual or _busy(connection, opening["room_id"], start_at, end_at, now):
             return None
 
+        offer_id = uuid4()
+        confirmed_at = now if request["auto_confirm"] else None
+        reference = _booking_reference(opening["venue"], offer_id) if confirmed_at else None
         offer = connection.execute(
             """
             INSERT INTO marketplace_offers
                 (id, request_id, opening_id, room_id, start_at, end_at, price_ore, expires_at,
-                 match_reason, match_provider)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING id, start_at, end_at, price_ore, expires_at, match_reason, match_provider
+                 match_reason, match_provider, confirmed_at, booking_reference)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, start_at, end_at, price_ore, expires_at, match_reason, match_provider, booking_reference
             """,
-            (uuid4(), request_id, opening["opening_id"], opening["room_id"], start_at, end_at,
-             actual["price_ore"], min(now + timedelta(minutes=5), start_at), reason, provider),
+            (offer_id, request_id, opening["opening_id"], opening["room_id"], start_at, end_at,
+             actual["price_ore"], confirmed_at or min(now + timedelta(minutes=5), start_at),
+             reason, provider, confirmed_at, reference),
         ).fetchone()
         return _json({**offer, "room_name": opening["room_name"]})
 
@@ -680,13 +725,11 @@ def accept_offer(request_id: str, offer_id: str, *, user_id: UUID) -> dict:
             raise Conflict("The room is no longer available at that time.")
         if _busy(connection, offer["room_id"], start_at, end_at, now, exclude=offer_id):
             raise Conflict("The room is no longer available at that time.")
-        known_venue = VENUES.get(offer["venue"])
-        prefix = known_venue.booking_prefix if known_venue else "ROOM"
         connection.execute(
             """
             UPDATE marketplace_offers SET confirmed_at = %s, booking_reference = %s
             WHERE id = %s
             """,
-            (now, prefix + "-" + offer["id"].hex[:12].upper(), offer_id),
+            (now, _booking_reference(offer["venue"], offer["id"]), offer_id),
         )
         return _status(connection, request, now)

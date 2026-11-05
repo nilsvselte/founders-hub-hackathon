@@ -4,13 +4,14 @@ import re
 import secrets
 from collections.abc import Awaitable, Callable
 from threading import BoundedSemaphore
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
+from fastapi.security.utils import get_authorization_scheme_param
 from pydantic import BaseModel, SecretStr, field_validator
 
 from . import db
@@ -39,6 +40,7 @@ _COOKIE = "marketplace_session"
 _SESSION_SECONDS = 7 * 24 * 60 * 60
 _EMAIL = re.compile(r"[^\s@\x00]+@[^\s@\x00]+\.[^\s@\x00]+")
 _TOKEN = re.compile(r"[A-Za-z0-9_-]{43}")
+_AGENT_TOKEN = re.compile(r"sra_[A-Za-z0-9_-]{43}")
 _HASH_SLOTS = BoundedSemaphore(4)
 
 
@@ -147,6 +149,78 @@ def require_user(request: Request) -> Account:
         if account is not None:
             return Account.model_validate(account)
     raise HTTPException(status_code=401, detail="Sign in to continue")
+
+
+def require_agent_or_user(request: Request) -> Account:
+    """Authenticate a renter token on routes that explicitly opt in."""
+    authorization = request.headers.get("authorization")
+    if authorization is None:
+        return require_user(request)
+
+    scheme, token = get_authorization_scheme_param(authorization)
+    if scheme.lower() == "bearer" and _AGENT_TOKEN.fullmatch(token):
+        token_hash = hashlib.sha256(token.encode("ascii")).digest()
+        with _connect() as connection:
+            account = connection.execute(
+                """
+                SELECT u.id, u.name, u.email, u.role
+                FROM marketplace_agent_tokens t
+                JOIN marketplace_users u ON u.id = t.user_id
+                WHERE t.token_hash = %s AND u.role = 'renter'
+                """,
+                (token_hash,),
+            ).fetchone()
+        if account is not None:
+            return Account.model_validate(account)
+    raise HTTPException(
+        status_code=401,
+        detail="Invalid marketplace agent token",
+        headers={"WWW-Authenticate": "Bearer", "Cache-Control": "no-store"},
+    )
+
+
+def _agent_token_owner(account: Annotated[Account, Depends(require_user)]) -> Account:
+    if account.role != "renter":
+        raise HTTPException(status_code=403, detail="A renter account is required")
+    return account
+
+
+AgentTokenOwner = Annotated[Account, Depends(_agent_token_owner)]
+
+
+@router.get("/agent-token")
+def get_agent_token_status(account: AgentTokenOwner, response: Response) -> dict[str, bool]:
+    response.headers["Cache-Control"] = "no-store"
+    with _connect() as connection:
+        active = connection.execute(
+            "SELECT EXISTS(SELECT 1 FROM marketplace_agent_tokens WHERE user_id = %s) AS active",
+            (account.id,),
+        ).fetchone()["active"]
+    return {"active": active}
+
+
+@router.post("/agent-token", status_code=201, dependencies=[Depends(require_browser_mutation)])
+def issue_agent_token(account: AgentTokenOwner, response: Response) -> dict[str, str]:
+    response.headers["Cache-Control"] = "no-store"
+    token = f"sra_{secrets.token_urlsafe(32)}"
+    token_hash = hashlib.sha256(token.encode("ascii")).digest()
+    with _connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO marketplace_agent_tokens (user_id, token_hash)
+            VALUES (%s, %s)
+            ON CONFLICT (user_id) DO UPDATE SET token_hash = EXCLUDED.token_hash
+            """,
+            (account.id, token_hash),
+        )
+    return {"token": token}
+
+
+@router.delete("/agent-token", status_code=204, dependencies=[Depends(require_browser_mutation)])
+def revoke_agent_token(account: AgentTokenOwner) -> Response:
+    with _connect() as connection:
+        connection.execute("DELETE FROM marketplace_agent_tokens WHERE user_id = %s", (account.id,))
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})
 
 
 @router.post("/register", status_code=201, dependencies=[Depends(require_browser_mutation)])

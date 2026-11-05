@@ -11,6 +11,7 @@ type Booking = {
   id: string;
   room_name: string | null;
   status: "waiting" | "offered" | "confirmed" | "expired";
+  auto_confirm?: boolean;
   booking_reference: string | null;
   earliest_start: string;
   latest_end: string;
@@ -51,6 +52,7 @@ export default function BookingsPage() {
       <p className="identity-kicker">Your account</p>
       <h1>My bookings</h1>
       <p className="identity-intro">Track standby requests and confirmed reservations. <Link href="/account/preferences">Your preferences</Link></p>
+      {renterId ? <p className="identity-switch"><Link href="/agent">Set up calendar assistant</Link></p> : null}
       {loading ? <p role="status">Checking your account…</p> : !account ? (
         <p><Link className="identity-primary" href="/sign-in?next=%2Fbookings">Sign in to see your bookings</Link></p>
       ) : account.role === "host" ? (
@@ -63,7 +65,9 @@ export default function BookingsPage() {
             <li key={booking.id}>
               <Link className="booking-row" href={`/bookings/${booking.id}`}>
                 <div className="booking-row-main">
-                  <span className={`booking-status booking-status-${booking.status}`}>{labels[booking.status]}</span>
+                  <span className={`booking-status booking-status-${booking.status}`}>
+                    {booking.status === "waiting" && booking.auto_confirm ? "Waiting to book" : labels[booking.status]}
+                  </span>
                   <h2>{booking.offer?.room_name ?? booking.room_name ?? "Flexible room request"}</h2>
                   <p>{booking.offer
                     ? `${date.format(new Date(booking.offer.start_at))}–${time.format(new Date(booking.offer.end_at))} Oslo time`

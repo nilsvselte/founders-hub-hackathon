@@ -2,13 +2,33 @@
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
 
 from . import db
-from .accounts import Account, require_browser_mutation, require_user
+from .accounts import Account, require_agent_or_user, require_browser_mutation, require_user
 from .schemas import AboutYou, AgentSettings, CatalogOptions, RoomPreferences, UserPreferences, UserPreferencesInput
 
-router = APIRouter(tags=["preferences"])
+class PreferencesRoute(APIRoute):
+    def get_route_handler(self):
+        handler = super().get_route_handler()
+
+        async def handle(request: Request) -> Response:
+            try:
+                return await handler(request)
+            except RequestValidationError:
+                return JSONResponse(
+                    {"detail": "Enter valid room preferences"},
+                    status_code=422,
+                    headers={"Cache-Control": "no-store"},
+                )
+
+        return handle
+
+
+router = APIRouter(tags=["preferences"], route_class=PreferencesRoute)
 
 _ABOUT = tuple(AboutYou.model_fields)
 _PREFERENCES = tuple(RoomPreferences.model_fields)
@@ -23,6 +43,13 @@ def require_renter_account(account: Annotated[Account, Depends(require_user)]) -
 
 
 RenterAccount = Annotated[Account, Depends(require_renter_account)]
+
+
+def require_context_account(account: Annotated[Account, Depends(require_agent_or_user)]) -> Account:
+    return require_renter_account(account)
+
+
+ContextAccount = Annotated[Account, Depends(require_context_account)]
 
 
 def load_preferences(user_id) -> UserPreferences:
@@ -51,6 +78,15 @@ def get_preferences(account: RenterAccount, response: Response) -> UserPreferenc
 @router.put("/me/preferences", response_model=UserPreferences, dependencies=[Depends(require_browser_mutation)])
 def put_preferences(body: UserPreferencesInput, account: RenterAccount, response: Response) -> UserPreferences:
     values = {**body.about.model_dump(), **body.preferences.model_dump(), **body.agent.model_dump()}
+    try:
+        for value in values.values():
+            for item in value if isinstance(value, list) else (value,):
+                if isinstance(item, str) and b"\0" in item.encode("utf-8"):
+                    raise ValueError("Text contains a null byte")
+    except ValueError:
+        raise HTTPException(
+            status_code=422, detail="Enter valid room preferences", headers={"Cache-Control": "no-store"},
+        ) from None
     values["equipment"] = db._equipment(values["equipment"])
     columns = ", ".join(_COLUMNS)
     placeholders = ", ".join(["%s"] * len(_COLUMNS))
@@ -118,7 +154,7 @@ def agent_context(saved: UserPreferences) -> dict[str, Any]:
 
 
 @router.get("/me/agent-context")
-def get_agent_context(account: RenterAccount, response: Response) -> dict[str, Any]:
+def get_agent_context(account: ContextAccount, response: Response) -> dict[str, Any]:
     response.headers["Cache-Control"] = "no-store"
     return agent_context(load_preferences(account.id))
 

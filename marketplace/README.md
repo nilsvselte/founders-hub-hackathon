@@ -1,6 +1,6 @@
 # standbyroom meeting room marketplace
 
-Renters can browse venues, sign in, and request a time. Hosts use a separate dashboard to create and publish room listings and release availability. When an opening matches a request, the marketplace holds a priced offer and confirms it after the renter accepts. Next.js serves the marketplace and FastAPI on Uvicorn manages accounts and bookings in PostgreSQL.
+Renters can browse venues, sign in, and choose **Book when available** to authorize standbyroom to book within their time window, group size, equipment needs, and total budget. The marketplace confirms a matching opening and reserves the slot in the same transaction. Hosts use a separate dashboard to publish rooms and release availability. Next.js serves the marketplace and FastAPI on Uvicorn manages accounts and bookings in PostgreSQL.
 
 ## Run with Docker Compose
 
@@ -53,13 +53,17 @@ Open `http://localhost:3000`. Next.js forwards `/api/*` to Uvicorn so browser re
 
 ## Try the booking demo
 
-1. Set `MARKETPLACE_DEMO_MODE=1` in `backend/.env` before starting Uvicorn.
-2. Create a renter account, open a sample room, and submit a standby request. Press the demo release control to simulate an early release for that room.
-3. Wait for the quote, then accept it. The marketplace shows a booking reference once PostgreSQL confirms the reservation.
+1. Set `MARKETPLACE_DEMO_MODE=1` in `backend/.env` before starting Uvicorn. Leave `ANTHROPIC_API_KEY` unset for the keyless demo.
+2. Create a renter account, open a sample room, and choose **Book when available**. If the room has no eligible opening, press **Release demo room** to simulate an early release.
+3. Show the confirmed reservation, final price, and booking reference. Choose **Add to Google Calendar** to open a prefilled event draft.
 
-Set `ANTHROPIC_API_KEY` in the backend environment to use Claude. You can override the model with `ANTHROPIC_MODEL`. Without a key, demo mode uses a deterministic matcher and labels its offers as demo matches. Keep demo mode disabled outside local development.
+For live Claude matching, set `ANTHROPIC_API_KEY` in the backend environment. Pydantic AI uses Claude Sonnet 5.5 (`claude-sonnet-5-5`) by default. Override it with `ANTHROPIC_MODEL` or set `ANTHROPIC_WORKSPACE_ID` when your organization key requires a workspace. Keep these values in your local environment. Keyless demo mode uses a deterministic matcher and labels the result **Demo match**. Enable demo mode only against test inventory.
 
 To test the host side, register as a host, create a listing, publish it, and release an opening from the host dashboard. Use a separate browser session to book it as a renter.
+
+## Try the calendar assistant
+
+Sign in as a renter and open **Calendar assistant** at `/agent` to create or revoke a local assistant token. Set room preferences and agent settings at `/account/preferences`. The [local MCP setup](agent/README.md) shows how to connect Claude and request suggestions. The assistant can search and suggest rooms without changing inventory. Review and approve the exact room, time, and price before it creates a hold and confirms a booking.
 
 ## Pilot venues
 

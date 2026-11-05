@@ -24,6 +24,7 @@ type Offer = CalendarOffer & {
 type StandbyRequest = {
   id: string;
   room_id: string | null;
+  auto_confirm?: boolean;
   status: "waiting" | "offered" | "confirmed" | "expired";
   offer: Offer | null;
   booking_reference: string | null;
@@ -196,6 +197,7 @@ function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           room_id: room?.id ?? null,
+          auto_confirm: true,
           earliest_start: start.toISOString(),
           latest_end: end.toISOString(),
           duration_minutes: duration,
@@ -249,6 +251,7 @@ function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
 
   const offer = request?.offer;
   const offerPhoto = photo(offer?.room_photo);
+  const needsAcceptance = status === "offered" && !request?.auto_confirm;
   if (requestId && !request) {
     if (restoring) return <p className="status-note" role="status">Loading your booking…</p>;
     return (
@@ -318,8 +321,11 @@ function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
               </label>
             </div>
           </fieldset>
-          <button type="submit" className="button primary" disabled={!!busy || restoring || !earliest || !latest}>
-            {busy === "submit" ? "Submitting…" : "Send request"}
+          <p id="standby-authorization" className="status-note">
+            By submitting, you authorize standbyroom to book {room ? "this room" : "a matching room"} automatically within your time window and at or below your maximum total price.
+          </p>
+          <button type="submit" className="button primary" aria-describedby="standby-authorization" disabled={!!busy || restoring || !earliest || !latest}>
+            {busy === "submit" ? "Submitting…" : "Book when available"}
             <span aria-hidden="true">→</span>
           </button>
           {error && <p className="error" role="alert">{error}</p>}
@@ -331,7 +337,13 @@ function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
           <h2 id="status-title">Booking status</h2>
         </div>
         <div aria-live="polite" aria-atomic="true" className="status-body">
-          {status === "waiting" && <EmptyState icon="…" title="Waiting for an opening">We’ll check new openings against your request. You can return here from your bookings.</EmptyState>}
+          {status === "waiting" && (
+            <EmptyState icon="…" title="Waiting for an opening">
+              {request?.auto_confirm
+                ? "We’ll book a room automatically if an opening meets your requirements. Check My bookings for confirmation."
+                : "We’ll check new openings against your request. You can return here from your bookings."}
+            </EmptyState>
+          )}
           {status === "expired" && <EmptyState icon="↻" title="This request has expired">Start a new request to choose another time.</EmptyState>}
           {status === "confirmed" && (
             <div className="confirmed">
@@ -360,7 +372,7 @@ function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
                 <p className="price">{money(offer.price_ore)}</p>
               </div>
               <p className="offer-time">{describeWindow(offer.start_at, offer.end_at)} <span>Oslo time</span></p>
-              {status === "offered" && <p className="hold">Held until {formatTime.format(new Date(offer.expires_at))} Oslo time</p>}
+              {needsAcceptance && <p className="hold">Held until {formatTime.format(new Date(offer.expires_at))} Oslo time</p>}
               {offer.match_reason && (
                 <p className="match-note">
                   {offer.match_provider && <strong>{offer.match_provider === "claude" ? "Matched by Claude" : "Demo match"}. </strong>}
@@ -373,7 +385,7 @@ function BookingFlow({ room, requestId, searchDate, guests }: StandbyProps) {
         {request && <GoogleCalendarLink booking={request} />}
         {error && request && <p className="error" role="alert">{error}</p>}
         {pollError && (status === "waiting" || status === "offered") && <p className="status-note" role="status">Connection interrupted. Retrying automatically…</p>}
-        {status === "offered" && offer && (
+        {needsAcceptance && offer && (
           <button type="button" className="button primary" onClick={() => accept(offer)} disabled={!!busy}>
             {busy === "accept" ? "Booking…" : "Accept and book"}
             <span aria-hidden="true">→</span>

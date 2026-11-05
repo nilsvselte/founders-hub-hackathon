@@ -90,10 +90,10 @@
 
 .more { margin: -4px 0 0; font-size: 13px; color: var(--muted); }
 
-/* Quote */
+/* Booking confirmation */
 .quote.done { border-color: var(--good); background: rgba(127, 199, 154, 0.07); }
 .quote.done .q-price { color: var(--good); }
-.quote.done #accept:disabled { background: var(--good); color: var(--accent-ink); opacity: 1; }
+.q-status { color: var(--good); font-size: 14px; font-weight: 600; }
 
 @media (max-width: 720px) {
   .prefs { grid-template-columns: 1fr; }

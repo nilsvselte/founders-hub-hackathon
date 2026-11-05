@@ -1,0 +1,28 @@
+.page {
+  max-width: 760px;
+  display: grid;
+  gap: 22px;
+}
+
+.intro h1 { margin-top: 7px; }
+.intro h1 + p { margin-top: 10px; max-width: 53ch; color: var(--muted); }
+.textLink { display: inline-block; margin-top: 12px; color: var(--accent); font-size: 14px; font-weight: 670; }
+.settings { display: grid; gap: 22px; }
+.panel { min-width: 0; padding: clamp(16px, 3vw, 25px); border: 1px solid var(--line); border-radius: 14px; }
+.panel h2 { margin-bottom: 6px; font: 680 22px/1.2 var(--sans); letter-spacing: -.025em; }
+.panel p + p { margin-top: 8px; }
+.muted { color: var(--muted); font-size: 14px; }
+.steps { margin: 12px 0 14px; padding-left: 22px; }
+.steps li + li { margin-top: 7px; }
+.details { margin: 13px 0; }
+.details summary { cursor: pointer; font-weight: 650; }
+.details p { margin-top: 8px; color: var(--muted); font-size: 14px; }
+.command { margin: 8px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+.panel code { overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 12px; }
+.actions :global(.button.secondary) { margin-top: 0; }
+.token { margin-top: 14px; gap: 0; }
+.token input { font-family: ui-monospace, monospace; }
+.status:not(:empty) { margin-top: 9px; color: var(--muted); font-size: 13px; }
+.status:empty { margin: 0; }
+.panel :global(.identity-error) { margin-top: 8px; }

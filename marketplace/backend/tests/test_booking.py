@@ -1,3 +1,4 @@
+import asyncio
 import os
 import time
 import unittest
@@ -8,6 +9,7 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import psycopg
+from fastapi import BackgroundTasks
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
 
@@ -71,7 +73,8 @@ class BookingIntegrationTests(unittest.TestCase):
                     (renter, f"{renter}@example.test", bytes(16), bytes(32)),
                 )
 
-    def request(self, renter=None, *, max_price_ore=30000, duration_minutes=30):
+    def request(self, renter=None, *, max_price_ore=30000, duration_minutes=30, auto_confirm=None):
+        options = {} if auto_confirm is None else {"auto_confirm": auto_confirm}
         return db.create_request(
             {
                 "room_id": self.room_id,
@@ -82,6 +85,7 @@ class BookingIntegrationTests(unittest.TestCase):
                 "equipment": ["screen"],
                 "max_price_ore": max_price_ore,
                 "preferences": "",
+                **options,
             },
             renter or self.renter,
         )
@@ -124,10 +128,53 @@ class BookingIntegrationTests(unittest.TestCase):
             self.assertNotIn(None, references)
             self.assertEqual({booking["offer"]["price_ore"] for booking in bookings}, {offer["price_ore"]})
 
+    def test_concurrent_automatic_bookings_confirm_one_request(self):
+        db.record_release(self.event)
+        requests = [self.request(auto_confirm=True) for _ in range(24)]
+        candidate, = db.list_candidates(requests[0])
+        with ThreadPoolExecutor(max_workers=12) as workers:
+            results = list(workers.map(
+                lambda request_id: db.create_offer(request_id, candidate, "Matches requested time", "demo"),
+                requests,
+            ))
+
+        (winner, offer), = [(request_id, offer) for request_id, offer in zip(requests, results) if offer]
+        confirmed = db.get_request(winner, user_id=self.renter)
+        self.assertEqual(confirmed["status"], "confirmed")
+        self.assertTrue(confirmed["booking_reference"])
+        self.assertEqual(confirmed["booking_reference"], offer["booking_reference"])
+        self.assertEqual(confirmed["offer"]["price_ore"], candidate["price_ore"])
+        self.assertEqual({db.get_request(r)["status"] for r in requests if r != winner}, {"waiting"})
+
+    def test_device_press_confirms_waiting_automatic_request(self):
+        from app.main import ingest_release, match_request
+
+        db.schedule_device_block(self.room_id, datetime.now(UTC) - timedelta(minutes=5), self.end)
+        request_id = self.request(auto_confirm=True)
+        with patch.dict(os.environ, {"MARKETPLACE_DEMO_MODE": "1", "ANTHROPIC_API_KEY": ""}):
+            match_request(request_id)
+            self.assertEqual(db.get_request(request_id)["status"], "waiting")
+            tasks = BackgroundTasks()
+            release = ingest_release({
+                "type": "room.release_requested",
+                "source": "atech",
+                "event_id": str(uuid4()),
+                "external_room_id": self.room_id,
+                "requested_at": datetime.now(UTC),
+            }, tasks)
+            self.assertTrue(release["created"])
+            asyncio.run(tasks())
+
+        booking = db.get_request(request_id, user_id=self.renter)
+        self.assertEqual(booking["status"], "confirmed")
+        self.assertEqual(datetime.fromisoformat(booking["offer"]["start_at"]), self.start)
+        self.assertEqual(datetime.fromisoformat(booking["offer"]["end_at"]), self.end)
+
     def test_expired_offer_frees_the_slot(self):
         db.record_release(self.event)
         request_id = self.request()
         offer = self.hold(request_id)
+        self.assertEqual(db.get_request(request_id)["status"], "offered")
         with db._connect() as connection:
             connection.execute("UPDATE marketplace_offers SET expires_at = now() WHERE id = %s", (offer["id"],))
         with self.assertRaises(db.Conflict):

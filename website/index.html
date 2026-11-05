@@ -38,7 +38,7 @@
     <div class="container hero-copy">
       <p class="where">Live at Digs, Trondheim</p>
       <h1>Tell it what you need.<br><em>It finds the room.</em></h1>
-      <p class="lead">Say when, how many, what kit and what you will pay. An agent ranks every room at Digs against it, and quotes you the best fit the moment one frees up, often below list price.</p>
+      <p class="lead">Tell us when, how many people and what equipment you need. Set a maximum price and standbyroom automatically books a matching room when one opens.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="http://127.0.0.1:3001/standby" data-marketplace>Make a standby request</a>
         <a class="btn btn-ghost" href="http://127.0.0.1:3001/" data-marketplace>Browse rooms</a>
@@ -46,7 +46,7 @@
     </div>
 
     <div class="container">
-      <div class="board" aria-label="Live demo: the agent matching rooms to a request">
+      <div class="board" aria-label="Interactive demo: the agent matching and booking a room">
         <div class="board-col">
           <div class="board-head"><h2 class="board-title">Your preferences</h2><span class="demo-tag">Demo</span></div>
           <button class="prefs-sum" id="prefs-sum" type="button" aria-expanded="false" aria-controls="prefs"><span class="prefs-sum-text" id="prefs-sum-text">4 people · 45 min · screen + whiteboard · ≤300 kr</span><span class="prefs-sum-edit">Edit</span></button>
@@ -80,9 +80,9 @@
             <li class="m"><span class="rank">2</span><div><strong>Phone booth 2</strong> · now<span class="why">Free now, but seats 1.</span></div><span class="fit">38%</span></li>
           </ol>
           <p class="more" id="more"></p>
-          <div class="quote" id="quote" hidden>
-            <div><span class="q-room">Bakklandet · 15:25–16:00</span><span class="q-price">180 kr <s>320 kr</s></span><span class="q-note">Held for you for 2 minutes</span></div>
-            <button class="btn btn-primary btn-sm" id="accept" type="button">Accept</button>
+          <div class="quote done" id="quote" role="status" hidden>
+            <div><span class="q-room"></span><span class="q-price"></span><span class="q-note">Booked automatically within your limits</span></div>
+            <span class="q-status">Confirmed</span>
           </div>
         </div>
       </div>
@@ -104,19 +104,19 @@
             <ul class="mini"><li>Bakklandet released <span>15:20</span></li><li>Seats 4, screen, whiteboard <span>fits</span></li><li>Inside your window <span>fits</span></li><li>Fit score <span class="gold">94%</span></li></ul>
           </div>
           <div class="panel" data-panel="2" hidden>
-            <p class="panel-label">Quote</p>
-            <p class="panel-big">Bakklandet, 15:25–16:00</p>
+            <p class="panel-label">Booking confirmed</p>
+            <p class="panel-big">Bakklandet, 15:25–16:10</p>
             <p class="panel-price">180 kr</p>
-            <ul class="mini"><li>List price <span>320 kr</span></li><li>Held for you <span>2 min</span></li><li>Rechecked before booking <span>yes</span></li></ul>
+            <ul class="mini"><li>List price <span>320 kr</span></li><li>Your maximum <span>300 kr</span></li><li>Rechecked before booking <span>yes</span></li></ul>
           </div>
         </div>
         <ol class="steps">
           <li><button class="step is-on" type="button" data-step="0" aria-pressed="true"><span class="step-n">1</span>Set your needs</button>
             <p>Time window, length, group size, equipment, budget and how flexible you are. Say it once; the agent keeps it.</p></li>
           <li><button class="step" type="button" data-step="1" aria-pressed="false"><span class="step-n">2</span>The agent watches and ranks</button>
-            <p>Every free room and every early release is scored against your request, with the reason it fits or doesn't.</p></li>
-          <li><button class="step" type="button" data-step="2" aria-pressed="false"><span class="step-n">3</span>Get a quote, accept</button>
-            <p>When the best fit opens, you get a price and the slot is held for you. One tap accepts; the agent rechecks and books it.</p></li>
+            <p>The agent compares eligible openings with your request and chooses a room that fits.</p></li>
+          <li><button class="step" type="button" data-step="2" aria-pressed="false"><span class="step-n">3</span>Get your confirmation</button>
+            <p>When a room fits, standbyroom rechecks the slot and books it automatically within the time window and budget you submitted.</p></li>
         </ol>
       </div>
     </div>
@@ -134,12 +134,12 @@
         <article class="why-card">
           <p class="why-k">No hunting</p>
           <h3>No calendars to refresh.</h3>
-          <p>You say what you need once. The agent checks every room at Digs against it and tells you why each one fits or doesn't.</p>
+          <p>You say what you need once. The agent checks new openings and explains why the room it booked fits your request.</p>
         </article>
         <article class="why-card">
           <p class="why-k">It waits for you</p>
           <h3>The agent does the waiting.</h3>
-          <p>Nothing fits yet? It keeps watching, and the moment a room frees up you get a quote held just for you.</p>
+          <p>Nothing fits yet? It keeps watching and books a room as soon as one meets your requirements.</p>
         </article>
       </div>
     </div>
@@ -151,6 +151,7 @@
       <p class="lead">Live at Digs, Trondheim. Leave your request now and the agent starts watching.</p>
       <div class="cta-row center">
         <a class="btn btn-primary" href="http://127.0.0.1:3001/standby" data-marketplace>Make a standby request</a>
+        <a class="btn btn-ghost" href="http://127.0.0.1:3001/agent" data-marketplace>Set up calendar assistant</a>
       </div>
     </div>
   </section>

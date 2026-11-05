@@ -14,7 +14,7 @@ export default async function StandbyPage({ searchParams }: Props) {
       <div className="booking-detail-heading">
         <p className="room-kicker">Standby matching</p>
         <h1>Find a room for me</h1>
-        <p>Set your meeting needs and budget. We’ll look across venues for a match as rooms open up. You decide whether to book the offer.</p>
+        <p>Set your meeting needs and budget. We’ll look across venues and book a matching room automatically when one opens up.</p>
       </div>
       <Standby searchDate={date} guests={guests >= 1 && guests <= 100 ? guests : undefined} />
     </main>
