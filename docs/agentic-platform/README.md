@@ -75,7 +75,7 @@ What an agent can do through the marketplace, and what exists today:
 | --- | --- | --- |
 | Search rooms, get a quote | none (read-only) | built: `GET /rooms`, `GET /rooms/{id}/quote` |
 | Suggest top 3 rooms for a meeting | none (read-only) | planned: `POST /suggestions` |
-| Read or set preferences (price ceiling, room types, equipment, venues) | user edits them | planned: `GET/PUT /me/preferences` |
+| Read or set preferences (price ceiling, room types, equipment, venues) | user edits them | built: `GET/PUT /me/preferences`; the agent reads `GET /me/agent-context` |
 | Hold and book a room | user's yes to that room, time, and price | built: standby request → offer → accept |
 | List or cancel bookings | user's yes to cancel | planned |
 

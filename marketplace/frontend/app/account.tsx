@@ -112,7 +112,13 @@ export function MarketHeader() {
         <div className="market-session">
           {account ? (
             <>
-              <span className="market-user" title={account.name}>{accountIcon}{account.name.trim().split(/\s+/)[0]}</span>
+              {account.role === "renter" ? (
+                <Link className="market-user" href="/account/preferences" title="Your preferences" aria-current={pathname.startsWith("/account") ? "page" : undefined}>
+                  {accountIcon}{account.name.trim().split(/\s+/)[0]}
+                </Link>
+              ) : (
+                <span className="market-user" title={account.name}>{accountIcon}{account.name.trim().split(/\s+/)[0]}</span>
+              )}
               <button className="market-signout" type="button" onClick={() => void signOut()} disabled={signingOut}>
                 {signingOut ? "Signing out…" : "Sign out"}
               </button>

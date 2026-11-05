@@ -12,10 +12,11 @@ from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import AwareDatetime
 
-from . import db, host
+from . import db, host, preferences
 from .accounts import Account, require_browser_mutation, require_user, router as accounts_router
 from .device import FixtureDeviceAdapter, InvalidDevicePayload, demo_release_payload, load_device_adapter
 from .matching import MatchingUnavailable, select_match
+from .preferences import load_preferences
 from .pricing import PriceQuote
 from .schemas import DemoReleaseInput, ReleaseResult, Room, StandbyRequestInput, StandbyRequestStatus, VenueInfo
 from .venues import current_venue
@@ -25,6 +26,7 @@ current_venue()
 app = FastAPI(title="Room Marketplace API")
 app.include_router(accounts_router)
 app.include_router(host.router)
+app.include_router(preferences.router)
 logger = logging.getLogger(__name__)
 device_bearer = HTTPBearer(auto_error=False)
 _match_lock = Lock()
@@ -185,8 +187,18 @@ def standby_history(account: Renter, response: Response) -> list[dict]:
     dependencies=[Depends(require_browser_mutation)],
 )
 def create_standby_request(body: StandbyRequestInput, background_tasks: BackgroundTasks, account: Renter) -> dict:
+    data = body.model_dump()
+    if data["equipment"] is None or data["max_price_ore"] is None:
+        # Fill only the fields the request left out from the renter's saved preferences.
+        saved = load_preferences(account.id).preferences
+        if data["equipment"] is None:
+            data["equipment"] = saved.equipment
+        if data["max_price_ore"] is None:
+            if saved.max_hourly_ore is None:
+                raise HTTPException(status_code=422, detail="Set a maximum price, or save one in your preferences")
+            data["max_price_ore"] = -(-saved.max_hourly_ore * body.duration_minutes // 60)
     try:
-        request_id = db.create_request(body.model_dump(), account.id)
+        request_id = db.create_request(data, account.id)
     except db.NotFound as exc:
         raise HTTPException(status_code=404, detail="Room not found") from exc
     status = request_status(request_id, account)

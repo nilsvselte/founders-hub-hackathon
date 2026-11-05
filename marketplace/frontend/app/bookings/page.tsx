@@ -50,7 +50,7 @@ export default function BookingsPage() {
     <main className="booking-page">
       <p className="identity-kicker">Your account</p>
       <h1>My bookings</h1>
-      <p className="identity-intro">Track standby requests and confirmed reservations.</p>
+      <p className="identity-intro">Track standby requests and confirmed reservations. <Link href="/account/preferences">Your preferences</Link></p>
       {loading ? <p role="status">Checking your account…</p> : !account ? (
         <p><Link className="identity-primary" href="/sign-in?next=%2Fbookings">Sign in to see your bookings</Link></p>
       ) : account.role === "host" ? (

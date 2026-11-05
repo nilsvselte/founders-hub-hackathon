@@ -94,6 +94,8 @@ img { display: block; max-width: 100%; }
 .market-login:hover, .market-signout:hover { box-shadow: 0 2px 5px #0002; }
 .market-account-icon { width: 16px; height: 16px; flex: none; }
 .market-user { overflow: hidden; text-overflow: ellipsis; }
+/* The renter's name links to their preferences. */
+a.market-user:hover, a.market-user[aria-current="page"] { color: var(--accent); }
 .market-session .identity-error { max-width: 16ch; }
 
 .market-browse { padding-block: clamp(20px, 3vw, 30px) clamp(50px, 8vw, 92px); }
