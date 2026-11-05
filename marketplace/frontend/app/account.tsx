@@ -74,7 +74,7 @@ export function useAccount() {
 }
 
 export function MarketHeader() {
-  const { account, loading, setAccount } = useAccount();
+  const { account, setAccount } = useAccount();
   const router = useRouter();
   const pathname = usePathname();
   const [signingOut, setSigningOut] = useState(false);
@@ -108,19 +108,17 @@ export function MarketHeader() {
           standbyroom
         </Link>
         <nav className="market-nav" aria-label="Marketplace">
-          <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>Browse rooms</Link>
-          <Link href="/venues" aria-current={pathname.startsWith("/venues") ? "page" : undefined}>Venues</Link>
-          <Link href="/ntnu" aria-current={pathname.startsWith("/ntnu") ? "page" : undefined}>NTNU</Link>
-          <a href="/welcome">About standbyroom</a>
-          {account ? (
-            <Link href={primaryPath} aria-current={pathname.startsWith(primaryPath) ? "page" : undefined}>
-              {account.role === "host" ? "Host dashboard" : "My bookings"}
-            </Link>
-          ) : !loading ? (
-            <Link href="/register?role=host">Rent out a room</Link>
-          ) : null}
+          <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>Find a room</Link>
+          <Link href="/ntnu" aria-current={pathname.startsWith("/ntnu") ? "page" : undefined}>NTNU rooms</Link>
+          <Link href="/host" aria-current={pathname.startsWith("/host") ? "page" : undefined}>For hosts</Link>
+          {account?.role === "renter" && (
+            <Link href="/bookings" aria-current={pathname.startsWith("/bookings") ? "page" : undefined}>My bookings</Link>
+          )}
         </nav>
         <div className="market-session">
+          <Link className="market-live" href="/live/digs-demo-1" aria-current={pathname.startsWith("/live") ? "page" : undefined}>
+            <span className="demo-room-dot" aria-hidden="true" />Live room demo
+          </Link>
           {account ? (
             <>
               {account.role === "renter" ? (
@@ -136,8 +134,6 @@ export function MarketHeader() {
                 {signingOut ? "Signing out…" : "Sign out"}
               </button>
             </>
-          ) : !loading ? (
-            <Link className="market-login" href="/sign-in">{accountIcon}Sign in</Link>
           ) : null}
           {error && <span className="identity-error" role="alert">{error}</span>}
         </div>

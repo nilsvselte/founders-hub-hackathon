@@ -94,6 +94,8 @@ img { display: block; max-width: 100%; }
 .market-nav a { padding: 9px 12px; border-radius: var(--r-pill); color: var(--muted); }
 .market-nav a:hover { background: var(--ghost); color: var(--ink); }
 .market-nav a[aria-current="page"] { background: var(--ink); color: var(--page); }
+.market-live { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line, currentColor); border-radius: var(--r-pill); color: var(--ink); font-size: 13px; font-weight: 500; text-decoration: none; white-space: nowrap; }
+.market-live:hover, .market-live[aria-current="page"] { background: var(--ghost); }
 .market-login, .market-signout {
   display: inline-flex;
   align-items: center;
@@ -575,6 +577,7 @@ fieldset { min-width: 0; padding: 0; border: 0; margin: 0; }
   .market-nav:empty { display: none; }
   .market-session { grid-column: 2; grid-row: 1; gap: 5px; }
   .market-user { max-width: min(96px, 22vw); }
+  .market-live { font-size: 12px; padding: 6px 9px; gap: 5px; }
   .market-nav a, .market-login, .market-signout { font-size: 12px; }
   .market-login, .market-signout { padding-inline: 10px; }
   .market-browse { padding-top: 16px; }
