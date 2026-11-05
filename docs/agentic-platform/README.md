@@ -55,10 +55,30 @@ The device server reports facts; the marketplace decides what they mean for book
 
 Each room has a base hourly rate and a minimum and maximum set by the host. The marketplace adjusts the rate by when the booking starts (weekday peak, off-peak, weekend) and gives a last-minute discount for starts within 30 minutes, always clamped to the host's limits. Every quote carries a plain-language reason. Agents compare quotes against the user's budget and can point out a cheaper nearby slot; they never set prices themselves.
 
-## Calendar connection
+## Calendar connection (planned)
 
-> TODO: research in progress. Will cover which calendars the agent connects to, how access is granted and scoped, what event data it reads, and how it finds meetings without a room.
+The marketplace agent reads Google Calendar in one of three ways:
+
+- **Assistant mode (demo):** the user's own Claude chat with the Google Calendar connector reads and updates events. Free on the subscription, but it works only inside that user's chat.
+- **ICS link:** the calendar's secret iCal address, read by the backend. Read-only and free; the link exposes the whole calendar, so the demo uses a throwaway account.
+- **Google OAuth:** read scope `calendar.events.readonly`, write scope `calendar.events` asked for only at first booking. Gives event ids and lets the agent write the booked room back. Microsoft 365 via Graph comes later.
+
+A meeting **needs a room** when it is upcoming, timed (not all-day), at least 15 minutes, has 2+ people, the user has not declined it, and it has no room resource, no physical location, and no video link. Only start time, length, headcount, and a rough area leave the user's side; titles, names, and emails stay private. After booking, the agent writes the room's address into the event's location and the booking ref into its description, without notifying attendees.
+
+How-to: [`calendar-scan`](../../marketplace/agent/.agents/skills/calendar-scan/SKILL.md), [`calendar-write-back`](../../marketplace/agent/.agents/skills/calendar-write-back/SKILL.md).
 
 ## Agent capabilities
 
-> TODO: research in progress. Will cover the actions agents can take through the marketplace (search, quote, hold, book, cancel), the API outside agents use, how they authenticate, and the approval step for each action.
+What an agent can do through the marketplace, and what exists today:
+
+| Action | Approval | Today |
+| --- | --- | --- |
+| Search rooms, get a quote | none (read-only) | built: `GET /rooms`, `GET /rooms/{id}/quote` |
+| Suggest top 3 rooms for a meeting | none (read-only) | planned: `POST /suggestions` |
+| Read or set preferences (price ceiling, room types, equipment, venues) | user edits them | planned: `GET/PUT /me/preferences` |
+| Hold and book a room | user's yes to that room, time, and price | built: standby request → offer → accept |
+| List or cancel bookings | user's yes to cancel | planned |
+
+Agents reach these through a **marketplace MCP server** (planned) in front of the backend. Read-only tools are marked read-only; hold, book, and cancel are marked destructive so the client asks first. An agent signs in with a per-user API token the user can revoke, and outside agents ("Bnb agents") get the same openings, quotes, and rules as a human renter. There are no payments, and the agent's reasoning runs in the user's own Claude chat, so the marketplace makes no paid model calls.
+
+How-to: [`marketplace/agent/AGENTS.md`](../../marketplace/agent/AGENTS.md) and its skills [`preferences`](../../marketplace/agent/.agents/skills/preferences/SKILL.md), [`room-matching`](../../marketplace/agent/.agents/skills/room-matching/SKILL.md), [`booking`](../../marketplace/agent/.agents/skills/booking/SKILL.md), [`marketplace-mcp`](../../marketplace/agent/.agents/skills/marketplace-mcp/SKILL.md).

@@ -34,3 +34,5 @@ Each lives in `.agents/skills/<name>/SKILL.md`. Read the skill before doing its 
 | `docs-system` | Writing or updating `docs/`, or deciding whether content belongs in docs, a skill, or `AGENTS.md`. |
 | `device-integration` | Connecting the marketplace to the device server: occupancy events, presence checks, the release button. |
 | `hackathon-demo` | Preparing or running the live demo. |
+
+The marketplace agent's skills (calendar scan, preferences, room matching, booking, calendar write-back, marketplace MCP) live in [marketplace/agent/AGENTS.md](marketplace/agent/AGENTS.md).

@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+token.json
+credentials*.json
+*.ics
 
 # Dependencies, caches, and build output
 node_modules/
