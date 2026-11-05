@@ -12,9 +12,13 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from . import db
 from .device import FixtureDeviceAdapter, InvalidDevicePayload, demo_release_payload, load_device_adapter
 from .matching import MatchingUnavailable, select_match
-from .schemas import ReleaseResult, StandbyRequestInput, StandbyRequestStatus
+from .schemas import ReleaseResult, StandbyRequestInput, StandbyRequestStatus, VenueInfo
+from .venues import current_venue
 
-app = FastAPI(title="Mesh Marketplace API")
+# Fail at startup if MARKETPLACE_VENUE names an unknown venue.
+current_venue()
+
+app = FastAPI(title="Meeting Room Marketplace API")
 logger = logging.getLogger(__name__)
 device_bearer = HTTPBearer(auto_error=False)
 
@@ -104,7 +108,7 @@ def ready() -> dict[str, str]:
     dependencies=[Depends(require_database)],
 )
 def create_standby_request(body: StandbyRequestInput, background_tasks: BackgroundTasks) -> dict:
-    request_id = db.create_request(body.model_dump())
+    request_id = db.create_request({**body.model_dump(), "venue": current_venue().id})
     status = request_status(request_id)
     background_tasks.add_task(match_request, request_id)
     return status
@@ -154,6 +158,11 @@ def accept_standby_offer(
         )
 
 
+@app.get("/venue", response_model=VenueInfo)
+def get_venue() -> dict[str, str]:
+    return current_venue().public()
+
+
 @app.get("/demo/config")
 def demo_config() -> dict[str, bool]:
     return {"enabled": demo_enabled()}
@@ -163,7 +172,7 @@ def demo_config() -> dict[str, bool]:
 def demo_release(background_tasks: BackgroundTasks) -> dict:
     if not demo_enabled():
         raise HTTPException(status_code=404, detail="Demo release is disabled")
-    event = FixtureDeviceAdapter().normalize_release(demo_release_payload())
+    event = FixtureDeviceAdapter().normalize_release(demo_release_payload(current_venue().demo_room_id))
     return ingest_release(event, background_tasks)
 
 
