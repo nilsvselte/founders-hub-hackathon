@@ -1,0 +1,31 @@
+[project]
+name = "tp-room-booking-mcp"
+version = "0.1.0"
+description = "Experimental local MCP adapter for NTNU TP room booking"
+requires-python = ">=3.12"
+dependencies = ["mcp>=1.20,<2", "httpx>=0.28,<1"]
+
+[project.optional-dependencies]
+login = ["playwright>=1.55,<2"]
+dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "ruff>=0.12,<1"]
+
+[project.scripts]
+tp-room-booking-mcp = "tp_room_booking_mcp.server:main"
+tp-room-booking-login = "tp_room_booking_mcp.login:main"
+tp-room-booking-probe = "tp_room_booking_mcp.probe:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]

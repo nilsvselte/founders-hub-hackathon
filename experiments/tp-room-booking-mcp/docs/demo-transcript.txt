@@ -1,0 +1,103 @@
+{
+  "tool": "session_status",
+  "result": {
+    "backend": "fixture",
+    "timezone": "Europe/Oslo",
+    "data": {
+      "authenticated": true,
+      "username": "fixture-user",
+      "writes_enabled": true
+    }
+  }
+}
+{
+  "tool": "search_available_rooms",
+  "result": {
+    "backend": "fixture",
+    "timezone": "Europe/Oslo",
+    "data": {
+      "rooms": [
+        {
+          "id": "DEMO-G2",
+          "name": "Demo Gl\u00f8shaugen 2",
+          "size": 12,
+          "area_id": "DEMO-GLOS",
+          "area_name": "Demo Gl\u00f8shaugen",
+          "building_id": "DEMO-B1",
+          "building_name": "Demo building",
+          "roomtype": {
+            "id": "GRUPPE",
+            "name": "Grupperom"
+          },
+          "available": true,
+          "can_book": true
+        }
+      ],
+      "count": 1
+    }
+  }
+}
+{
+  "tool": "book_room",
+  "result": {
+    "backend": "fixture",
+    "timezone": "Europe/Oslo",
+    "data": {
+      "booked": true,
+      "booking_id": "DEMO-BOOKING-1",
+      "room_id": "DEMO-G2",
+      "start": "2026-11-06T12:00:00",
+      "end": "2026-11-06T13:00:00",
+      "name": "MCP experiment",
+      "upstream": {
+        "reservations-completed": [
+          {
+            "ok": true,
+            "id": "DEMO-BOOKING-1"
+          }
+        ]
+      }
+    }
+  }
+}
+{
+  "tool": "list_my_bookings",
+  "result": {
+    "backend": "fixture",
+    "timezone": "Europe/Oslo",
+    "data": [
+      {
+        "id": "DEMO-BOOKING-1",
+        "name": "MCP experiment",
+        "notes": "",
+        "owner": "fixture-user",
+        "rooms": [
+          {
+            "id": "DEMO-G2"
+          }
+        ],
+        "start": "2026-11-06T12:00:00",
+        "end": "2026-11-06T13:00:00"
+      }
+    ]
+  }
+}
+{
+  "tool": "cancel_booking",
+  "result": {
+    "backend": "fixture",
+    "timezone": "Europe/Oslo",
+    "data": {
+      "cancelled": true,
+      "booking_id": "DEMO-BOOKING-1"
+    }
+  }
+}
+{
+  "tool": "list_my_bookings",
+  "result": {
+    "backend": "fixture",
+    "timezone": "Europe/Oslo",
+    "data": []
+  }
+}
