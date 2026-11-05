@@ -43,6 +43,14 @@ VENUES = {
             booking_prefix="KOWORK",
             demo_room_id="kowork-meeting-room",
         ),
+        Venue(
+            id="brighten",
+            operator="Brighten",
+            name="Brighten",
+            location="Bakke Bydelshus, Nordre Berggate 2, Trondheim",
+            booking_prefix="BRIGHTEN",
+            demo_room_id="brighten-meeting-room",
+        ),
     )
 }
 
