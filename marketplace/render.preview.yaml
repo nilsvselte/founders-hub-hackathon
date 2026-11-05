@@ -3,7 +3,7 @@ services:
     name: roomline-marketplace-preview-api
     runtime: docker
     plan: free
-    dockerContext: ./marketplace/backend
+    dockerContext: .
     dockerfilePath: ./marketplace/backend/Dockerfile
     autoDeployTrigger: off
     healthCheckPath: /ready

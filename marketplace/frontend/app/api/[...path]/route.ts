@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const sessionCookie = "marketplace_session=";
+const allowedCookies = [sessionCookie, "ntnu_demo_session="];
 const noCache = { "Cache-Control": "no-store" };
 
 function error(status: number, detail: string) {
@@ -36,9 +37,9 @@ async function proxy(request: Request, { params }: { params: Promise<{ path: str
     const value = request.headers.get(name);
     if (value) headers.set(name, value);
   }
-  const cookie = request.headers.get("Cookie")?.split(";")
-    .map((part) => part.trim()).find((part) => part.startsWith(sessionCookie));
-  if (cookie) headers.set("Cookie", cookie);
+  const cookies = request.headers.get("Cookie")?.split(";")
+    .map((part) => part.trim()).filter((part) => allowedCookies.some((prefix) => part.startsWith(prefix)));
+  if (cookies?.length) headers.set("Cookie", cookies.join("; "));
 
   if (target.pathname === "/internal/device/events") {
     const authorization = request.headers.get("Authorization");
@@ -69,7 +70,7 @@ async function proxy(request: Request, { params }: { params: Promise<{ path: str
     const responseHeaders = new Headers(noCache);
     if (isJson) responseHeaders.set("Content-Type", "application/json");
     for (const cookie of upstream.headers.getSetCookie()) {
-      if (cookie.startsWith(sessionCookie) && !/;\s*domain\s*=/i.test(cookie)) {
+      if (allowedCookies.some((prefix) => cookie.startsWith(prefix)) && !/;\s*domain\s*=/i.test(cookie)) {
         responseHeaders.append("Set-Cookie", cookie);
       }
     }
