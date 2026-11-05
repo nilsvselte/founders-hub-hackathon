@@ -200,7 +200,7 @@ export default function FindRoom({ children }: { children?: ReactNode }) {
             </div>
           </fieldset>
           {!loading && !account ? (
-            <DemoGuestButton label="Continue as demo guest to find rooms" />
+            <DemoGuestButton label="Find room now" />
           ) : account && account.role !== "renter" ? (
             <p className="status-note">Finding rooms needs a renter account.</p>
           ) : (

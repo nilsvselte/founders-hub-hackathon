@@ -570,7 +570,7 @@ fieldset { min-width: 0; padding: 0; border: 0; margin: 0; }
   .market-header-inner { min-height: 60px; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; padding-block: 8px 4px; }
   .market-wordmark { font-size: 22px; gap: 6px; }
   .market-mark { width: 25px; height: 25px; }
-  .market-nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; gap: 6px; }
+  .market-nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; gap: 6px; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
   .market-nav a { min-height: 36px; }
   .market-nav:empty { display: none; }
   .market-session { grid-column: 2; grid-row: 1; gap: 5px; }
