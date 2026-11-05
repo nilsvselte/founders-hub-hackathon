@@ -16,5 +16,5 @@ The judges look at whether the problem is real, how well the demo works, and whe
 
 - **Problem and user:** Who has the problem, and what do they do today?
 - **Prototype:** What does the team plan to make work by submission?
-- **Run locally:** Add install and run commands once the stack is chosen. Document required environment variables in `.env.example` with placeholder values.
+- **Run locally:** Follow the [marketplace setup](marketplace/README.md) to start Next.js, Uvicorn, and PostgreSQL.
 - **Demo and submission:** Add the demo link and submission instructions once confirmed.

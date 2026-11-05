@@ -1,0 +1,9 @@
+[project]
+name = "mesh-marketplace-api"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "psycopg[binary]>=3.2,<4",
+    "uvicorn>=0.34,<1",
+]

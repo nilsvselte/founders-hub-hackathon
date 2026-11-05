@@ -11,7 +11,8 @@ Mesh has meeting room time it can sell to the public. When a meeting ends early,
 | Folder | Owns |
 | --- | --- |
 | `website/` | Public landing page that explains the product and directs buyers to the marketplace. |
-| `marketplace/` | Buyer requests, inventory, pricing, holds, booking, and the Claude agent’s tools and workflow. |
+| `marketplace/frontend/` | Next.js app for buyers to submit standby requests and accept offers. |
+| `marketplace/backend/` | FastAPI app served by Uvicorn. Owns inventory, pricing, holds, booking, and the Claude agent’s tools. Uses PostgreSQL. |
 | `device/` | Atech ESP32 firmware and code that passes the button press to the marketplace. This folder starts empty. |
 
 ## Hackathon demo
@@ -19,3 +20,5 @@ Mesh has meeting room time it can sell to the public. When a meeting ends early,
 Use one physical button, two sample rooms, and one standby request. Show that the buyer has no matching slot, press **Release room**, then show the agent find a match and quote it. Accept the offer and show a confirmed test booking.
 
 Keep availability, price limits, and booking confirmation in the marketplace so the agent works from the same rules as the rest of the product. Edit this guide directly. `CLAUDE.md` links to it.
+
+See the [marketplace README](marketplace/README.md) for local startup commands.
