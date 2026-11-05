@@ -9,13 +9,50 @@ import type { Room } from "../market";
 import { osloInstant } from "../oslo-time";
 import styles from "./host.module.css";
 
-type Listing = Room & { published: boolean; last_occupancy?: { occupied: boolean; changed_at: string } | null };
+type Span = { start_at: string; end_at: string };
+type Listing = Room & {
+  published: boolean;
+  last_occupancy?: { occupied: boolean; changed_at: string } | null;
+  current_booking?: (Span & { reference: string }) | null;
+  active_block?: (Span & { id: string }) | null;
+};
 type Release = { created: boolean; opening_id?: string | null; reason?: string | null };
 const kinds = ["Studio", "Workshop", "Meeting room", "Boardroom"];
-const osloReportTime = new Intl.DateTimeFormat("en-GB", {
-  timeZone: "Europe/Oslo", day: "numeric", month: "short", year: "numeric",
-  hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-});
+
+const REFRESH_MS = 12_000;
+const GHOST_AFTER_MS = 10 * 60_000;
+const osloClock = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+const osloDay = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Oslo", day: "numeric", month: "short" });
+
+function clock(value: string, now: number) {
+  const time = new Date(value);
+  const sameDay = osloDay.format(time) === osloDay.format(new Date(now));
+  return sameDay ? osloClock.format(time) : `${osloDay.format(time)} ${osloClock.format(time)}`;
+}
+
+function RoomStatus({ room, now }: { room: Listing; now: number }) {
+  const booking = room.current_booking ?? room.active_block ?? null;
+  const sensor = room.last_occupancy;
+  // Empty since the later of the sensor change and the booking start.
+  const emptySince = booking && sensor && !sensor.occupied
+    ? Math.max(Date.parse(sensor.changed_at), Date.parse(booking.start_at)) : null;
+  const ghostMinutes = emptySince !== null && now - emptySince >= GHOST_AFTER_MS
+    ? Math.floor((now - emptySince) / 60_000) : null;
+  return (
+    <div className={styles.status} aria-live="polite">
+      <span className={booking ? styles.booked : styles.free}>
+        {room.current_booking ? "Booked" : room.active_block ? "Blocked" : "Free now"}
+        {booking && <> until <time dateTime={booking.end_at}>{clock(booking.end_at, now)}</time></>}
+      </span>
+      <span className={sensor ? (sensor.occupied ? styles.occupied : styles.vacant) : styles.noSensor}>
+        {sensor
+          ? <>{sensor.occupied ? "Occupied" : "Empty"} since <time dateTime={sensor.changed_at}>{clock(sensor.changed_at, now)}</time></>
+          : "No sensor"}
+      </span>
+      {ghostMinutes !== null && <strong className={styles.ghost} role="status">⚠ Booked but empty for {ghostMinutes} min</strong>}
+    </div>
+  );
+}
 
 function failureMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong. Please try again.";
@@ -73,6 +110,8 @@ function HostDashboard() {
   const mutationInFlight = useRef(false);
   const releaseAttempts = useRef(new Map<string, { duration: number; id: string }>());
 
+  const [now, setNow] = useState(() => Date.now());
+
   useEffect(() => {
     const controller = new AbortController();
     api<Listing[]>("host/rooms", { signal: controller.signal })
@@ -85,7 +124,20 @@ function HostDashboard() {
       .finally(() => {
         if (!controller.signal.aborted) setLoadingListings(false);
       });
-    return () => controller.abort();
+    // Live status: refresh bookings and sensor state quietly; keep old data on a failed refresh.
+    const timer = window.setInterval(() => {
+      setNow(Date.now());
+      if (mutationInFlight.current || document.hidden) return;
+      api<Listing[]>("host/rooms", { signal: controller.signal })
+        .then((rooms) => {
+          if (!controller.signal.aborted && !mutationInFlight.current) setListings(rooms);
+        })
+        .catch(() => {});
+    }, REFRESH_MS);
+    return () => {
+      window.clearInterval(timer);
+      controller.abort();
+    };
   }, []);
 
   useEffect(() => {
@@ -255,9 +307,7 @@ function HostDashboard() {
                 <h2>{room.name}</h2>
                 <p>{room.venue} · {room.city}</p>
                 <p>{room.capacity} guests · {money(room.hourly_rate_ore)} / hour</p>
-                {room.last_occupancy && (
-                  <p>Last reported {room.last_occupancy.occupied ? "occupied" : "empty"} · <time dateTime={room.last_occupancy.changed_at}>{osloReportTime.format(new Date(room.last_occupancy.changed_at))} Oslo time</time></p>
-                )}
+                <RoomStatus room={room} now={now} />
                 <div className={styles.actions}>
                   <button className={styles.secondary} type="button" disabled={!!busy} onClick={() => openEditor(room)}>Edit listing</button>
                   <button className={styles.secondary} type="button" disabled={!!busy} onClick={() => togglePublication(room)}>{room.published ? "Unpublish" : "Publish"}</button>

@@ -54,6 +54,14 @@
 .published, .draft { padding: 3px 7px; border-radius: 99px; font-weight: 650; }
 .published { background: #e7eee0; color: #3b5737; }
 .draft { background: #f2e7df; color: #6c4945; }
+/* Live status strip: booking state, sensor state, ghost-booking warning. */
+.status { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; font-size: .76rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.status > span, .ghost { padding: 4px 9px; border-radius: 99px; white-space: nowrap; }
+.free, .vacant { background: #f2ece7; color: var(--host-muted); }
+.booked { background: #f1e2e4; color: #6f2834; }
+.occupied { background: #e7eee0; color: #3b5737; }
+.noSensor { border: 1px dashed var(--host-line); color: var(--host-muted); }
+.ghost { background: #f9ecec; color: #8a303d; border: 1px solid #e3b9bd; font-weight: 750; }
 .roomInfo .actions { margin-top: 12px; }
 .roomInfo .secondary { min-height: 34px; padding: 5px 10px; font-size: .75rem; }
 .preview { color: var(--host-accent); font-size: .76rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
