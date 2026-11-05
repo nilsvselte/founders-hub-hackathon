@@ -1,6 +1,6 @@
 # Deploy the marketplace
 
-Deploy the Next.js app to Vercel. Run FastAPI on a separate container host with PostgreSQL so the existing Uvicorn process can finish background matching after it sends the response. The browser uses the Next.js `/api/*` rewrite on the frontend origin. Its session cookie does not need a shared domain with the API.
+Deploy the Next.js app to Vercel. The marketplace serves room browsing at `/` and the landing page at `/welcome`. Run `node marketplace/frontend/scripts/sync-landing.mjs` after editing `website/` to refresh the committed bundle used by frontend-only deployments. Run FastAPI on a separate container host with PostgreSQL so the existing Uvicorn process can finish background matching after it sends the response. The browser uses the Next.js `/api/*` rewrite on the frontend origin. Its session cookie does not need a shared domain with the API.
 
 ## Start a test API
 
@@ -18,7 +18,7 @@ curl --fail --silent --show-error https://YOUR_API_HOST/ready
 
 1. Create or link a Vercel project for this repository. In its project settings, set **Root Directory** to `marketplace/frontend`, select the **Next.js** preset, and use Node.js 22 or newer. The repository configuration pins pnpm for reproducible installs. [Vercel monorepos](https://vercel.com/docs/monorepos)
 2. Add `MARKETPLACE_API_URL` to the project's **Preview** environment with the API's HTTPS origin. The build uses the value for its API rewrite. Redeploy after changing it. [Vercel environment variables](https://vercel.com/docs/environment-variables)
-3. Keep Vercel Authentication enabled for previews. Deploy from a non-production Git branch or install the Vercel CLI and link the Git-connected project from the repository root. The project configuration skips automatic deploys from `main`. [Vercel deployment protection](https://vercel.com/docs/deployment-protection)
+3. Keep Vercel Authentication enabled for previews. Deploy from a non-production Git branch or install the Vercel CLI and link the Git-connected project from the repository root. The Vercel Git integration deploys pushes to `main` to Production. [Vercel deployment protection](https://vercel.com/docs/deployment-protection)
 
 ```sh
 vercel login

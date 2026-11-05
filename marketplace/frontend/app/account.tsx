@@ -102,6 +102,7 @@ export function MarketHeader() {
           <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>Browse rooms</Link>
           <Link href="/venues" aria-current={pathname.startsWith("/venues") ? "page" : undefined}>Venues</Link>
           <Link href="/ntnu" aria-current={pathname.startsWith("/ntnu") ? "page" : undefined}>NTNU</Link>
+          <a href="/welcome">About standbyroom</a>
           {account ? (
             <Link href={primaryPath} aria-current={pathname.startsWith(primaryPath) ? "page" : undefined}>
               {account.role === "host" ? "Host dashboard" : "My bookings"}
@@ -246,5 +247,31 @@ export function AccountForm({
         )}
       </section>
     </main>
+  );
+}
+
+export function DemoGuestButton({ className = "button primary", label = "Continue as demo guest" }: { className?: string; label?: string }) {
+  const { setAccount } = useAccount();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function start() {
+    setBusy(true);
+    setError("");
+    try {
+      setAccount(await api<Account>("auth/demo-session", { method: "POST" }));
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Couldn’t start the demo. Try again.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button type="button" className={className} onClick={() => void start()} disabled={busy}>
+        {busy ? "Starting demo…" : label} <span aria-hidden="true">→</span>
+      </button>
+      {error && <p className="error" role="alert">{error}</p>}
+    </>
   );
 }

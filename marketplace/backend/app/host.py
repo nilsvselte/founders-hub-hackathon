@@ -9,8 +9,12 @@ from pydantic import AwareDatetime, BaseModel, Field, StringConstraints, field_v
 from . import db
 from .accounts import Account, require_browser_mutation, require_user
 from .schemas import EquipmentName, ReleaseResult, Room
+from .venues import VENUES
 
 router = APIRouter(prefix="/host", tags=["hosting"])
+# Public, sign-in-free live view for the stage demo rooms only.
+public_router = APIRouter(prefix="/public", tags=["public"])
+LIVE_ROOM_IDS = frozenset(venue.demo_room_id for venue in VENUES.values())
 
 RoomKind = Literal["Studio", "Workshop", "Meeting room", "Boardroom"]
 ShortText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
@@ -237,3 +241,33 @@ def release_host_room(
     if result.get("reason") == "room_unpublished":
         raise HTTPException(status_code=409, detail="Publish this listing before releasing time")
     return result
+
+
+class LiveSpan(BaseModel):
+    start_at: AwareDatetime
+    end_at: AwareDatetime
+
+
+class LiveRoom(BaseModel):
+    """Occupancy and booked/free for a demo room. No references, owners or renters."""
+    id: str
+    name: str
+    venue: str
+    last_occupancy: HostRoomOccupancy | None = None
+    current_booking: LiveSpan | None = None
+    active_block: LiveSpan | None = None
+
+
+@public_router.get("/rooms/{room_id}/live", response_model=LiveRoom)
+def live_room(room_id: str, response: Response) -> dict:
+    response.headers["Cache-Control"] = "no-store"
+    if room_id not in LIVE_ROOM_IDS:
+        raise HTTPException(status_code=404, detail="Room not found")
+    with db._connect() as connection:
+        room = connection.execute(
+            f"SELECT id, name, venue_name AS venue, {_LIVE_STATUS} FROM marketplace_rooms WHERE id = %s",
+            (room_id,),
+        ).fetchone()
+    if room is None:
+        raise HTTPException(status_code=404, detail="Room not found")
+    return room

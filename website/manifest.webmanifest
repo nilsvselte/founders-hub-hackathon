@@ -1,0 +1,13 @@
+{
+  "name": "standbyroom",
+  "short_name": "standbyroom",
+  "description": "Meeting rooms released early, matched to you.",
+  "start_url": "./",
+  "display": "browser",
+  "theme_color": "#0A0E18",
+  "background_color": "#0A0E18",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

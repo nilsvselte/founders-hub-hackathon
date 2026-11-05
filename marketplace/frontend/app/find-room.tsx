@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import { useAccount } from "./account";
+import { DemoGuestButton, useAccount } from "./account";
 import { ApiError, api, money, photo } from "./market";
 import type { Room } from "./market";
 import { osloDateTime, osloInstant } from "./oslo-time";
@@ -200,7 +200,7 @@ export default function FindRoom({ children }: { children?: ReactNode }) {
             </div>
           </fieldset>
           {!loading && !account ? (
-            <Link className="button primary" href="/sign-in?next=/">Sign in to find rooms <span aria-hidden="true">→</span></Link>
+            <DemoGuestButton label="Continue as demo guest to find rooms" />
           ) : account && account.role !== "renter" ? (
             <p className="status-note">Finding rooms needs a renter account.</p>
           ) : (

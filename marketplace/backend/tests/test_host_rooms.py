@@ -12,7 +12,8 @@ from psycopg.conninfo import make_conninfo
 from app import db
 from app.accounts import Account
 from app.demo_host import claim_demo_rooms
-from app.host import HostRoom, list_host_rooms
+from fastapi import HTTPException
+from app.host import HostRoom, LiveRoom, list_host_rooms, live_room
 
 
 @unittest.skipUnless(os.environ.get("MARKETPLACE_TEST_DATABASE_URL"), "requires disposable PostgreSQL")
@@ -108,8 +109,37 @@ class HostRoomStatusTests(unittest.TestCase):
         self.assertLess(room.active_block.start_at, now)
         self.assertGreater(room.active_block.end_at, now)
 
+    def test_public_live_view_shows_demo_room_without_personal_data(self):
+        claim_demo_rooms(f"live-{uuid4().hex}@example.test", "a-long-test-password")
+        now = datetime.now(UTC)
+        db.record_occupancy({
+            "source": "test", "event_id": str(uuid4()), "external_room_id": "digs-demo-1",
+            "occupied": True, "changed_at": now.isoformat(),
+        })
+        payload = LiveRoom.model_validate(live_room("digs-demo-1", Response())).model_dump()
+        self.assertTrue(payload["last_occupancy"]["occupied"])
+        self.assertNotIn("reference", str(payload))
+        with self.assertRaises(HTTPException) as raised:
+            live_room(self.room_id, Response())
+        self.assertEqual(raised.exception.status_code, 404)
+
     def test_demo_host_claims_digs_rooms_idempotently(self):
         email = f"demo-{uuid4().hex}@example.test"
         first = claim_demo_rooms(email, "a-long-test-password")
         self.assertIn("digs-demo-1", first)
         self.assertEqual(claim_demo_rooms(email, None), first)
+
+
+class PublicLiveRoomTests(unittest.TestCase):
+    def test_only_demo_rooms_are_public(self):
+        with self.assertRaises(HTTPException) as raised:
+            live_room("not-a-demo-room", Response())
+        self.assertEqual(raised.exception.status_code, 404)
+
+    def test_live_room_drops_booking_reference(self):
+        now = datetime.now(UTC).isoformat()
+        room = LiveRoom.model_validate({
+            "id": "digs-demo-1", "name": "Driv", "venue": "Digs",
+            "current_booking": {"start_at": now, "end_at": now, "reference": "SECRET"},
+        })
+        self.assertNotIn("SECRET", room.model_dump_json())

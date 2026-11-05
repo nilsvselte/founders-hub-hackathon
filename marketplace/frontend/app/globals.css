@@ -668,3 +668,20 @@ fieldset { min-width: 0; padding: 0; border: 0; margin: 0; }
 .find-room-details { color: var(--muted); font-size: 13px; }
 .find-room-browse { margin-bottom: 24px; }
 @media (max-width: 420px) { .find-room-photo { width: 72px; height: 56px; } }
+
+/* Home-screen app (docs/phone-app.md): the iOS status bar is translucent over the
+   page (viewport-fit=cover), so the top bar pads for the notch and the page for
+   the home indicator. Phone inputs stay ≥16px so iOS doesn't zoom on focus. */
+html { background: var(--page-deep); -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
+body { padding-bottom: env(safe-area-inset-bottom); }
+.market-header { padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
+@media (max-width: 680px) {
+  input, select, textarea, .browse-field :is(input, select) { font-size: 16px; }
+}
+@media (pointer: coarse) {
+  .market-nav a, .market-login, .market-signout { display: inline-flex; align-items: center; min-height: 44px; }
+}
+@media (display-mode: standalone) {
+  html, body { overscroll-behavior-y: none; }
+  .market-header { position: sticky; top: 0; z-index: 30; }
+}

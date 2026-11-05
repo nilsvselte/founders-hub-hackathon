@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { useAccount } from "./account";
+import { DemoGuestButton, useAccount } from "./account";
 import { GoogleCalendarLink } from "./google-calendar-link";
 import type { CalendarOffer } from "./google-calendar";
 import { ApiError, api, money, photo } from "./market";
@@ -83,7 +83,8 @@ export default function Standby(props: StandbyProps) {
       <section className="room-access">
         <h2>{props.requestId ? "View your booking" : requestTitle}</h2>
         <p>Use your renter account to send requests and manage bookings.</p>
-        <Link className="button primary" href={`/sign-in?next=${encodeURIComponent(returnTo)}`}>Sign in to continue <span aria-hidden="true">→</span></Link>
+        <DemoGuestButton />
+        <Link className="room-back" href={`/sign-in?next=${encodeURIComponent(returnTo)}`}>Sign in</Link>
         <Link className="room-back" href={`/register?next=${encodeURIComponent(returnTo)}`}>Create a renter account</Link>
       </section>
     );

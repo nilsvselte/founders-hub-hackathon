@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useAccount } from "../account";
+import { DemoGuestButton, useAccount } from "../account";
 import { GoogleCalendarLink } from "../google-calendar-link";
 import type { CalendarOffer } from "../google-calendar";
 import { api, money } from "../market";
-import { DemoRoomLink } from "../demo-room";
+import { DemoRoomLink, LiveRoomLink } from "../demo-room";
 
 type Booking = {
   id: string;
@@ -93,9 +93,10 @@ export default function BookingsPage() {
         {renterId && <li><Link href="/account/notifications">Notifications</Link></li>}
         {renterId && <li><Link href="/account/preferences">Preferences</Link></li>}
         <li><DemoRoomLink /></li>
+        <li><LiveRoomLink /></li>
       </ul>
       {loading ? <p role="status">Checking your account…</p> : !account ? (
-        <p><Link className="identity-primary" href="/sign-in?next=%2Fbookings">Sign in to see your bookings</Link></p>
+        <p><DemoGuestButton className="identity-primary" /></p>
       ) : account.role === "host" ? (
         <p><Link className="identity-primary" href="/host">Go to your host dashboard</Link></p>
       ) : !current ? <p role="status">Loading your bookings…</p> : current.error ? (

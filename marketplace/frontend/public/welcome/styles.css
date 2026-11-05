@@ -257,3 +257,12 @@ section:not(.hero) { padding: var(--section) 0; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Phones: point people at the marketplace, the page that installs as the app. */
+.app-hint { display: none; }
+@media (max-width: 640px) {
+  .app-hint { display: block; margin-top: 16px; color: var(--muted); font-size: 14px; }
+  .app-hint a { color: var(--accent); font-weight: 600; }
+  input, select, textarea { font-size: 16px; } /* no iOS zoom on focus */
+}
+@media (display-mode: standalone) { .app-hint { display: none; } }
