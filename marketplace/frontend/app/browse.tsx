@@ -8,7 +8,7 @@ import { api, money, photo } from "./market";
 import type { Room } from "./market";
 import { osloDateTime } from "./oslo-time";
 
-const categories = ["All spaces", "Meeting room", "Studio", "Workshop", "Boardroom"];
+const categories = ["All spaces", "Meeting room", "Studio", "Workshop", "Boardroom", "Event space"];
 const guestCounts = Array.from({ length: 20 }, (_, index) => index + 1);
 const displayDate = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
@@ -26,6 +26,7 @@ const iconPaths = {
   studio: "M3 19h18M5 15l5-7 3 4 2-3 4 6M7 5h.01",
   workshop: "m4 20 8-8m-3-6 3-3 9 9-3 3Zm-4 6 7 7",
   boardroom: "M7 5h10a4 4 0 0 1 0 14H7A4 4 0 0 1 7 5ZM9 2v3m6-3v3M9 19v3m6-3v3",
+  event: "M4 20V9l8-5 8 5v11M4 20h16M9 20v-5h6v5M8 11h.01M12 11h.01M16 11h.01",
 };
 
 type IconName = keyof typeof iconPaths;
@@ -36,6 +37,7 @@ const categoryIcons: Record<string, IconName> = {
   Studio: "studio",
   Workshop: "workshop",
   Boardroom: "boardroom",
+  "Event space": "event",
 };
 
 function Icon({ name }: { name: IconName }) {
