@@ -61,7 +61,7 @@ Set `ANTHROPIC_API_KEY` in the backend environment to use Claude. You can overri
 
 ## Choose a venue
 
-Each deployment serves one venue, set with `MARKETPLACE_VENUE` in the backend. Use `digs` for Mesh at Digs (the default) or `kowork` for Kowork at Kjøpmannsgata 40. The venue sets the page branding, the rooms that requests can match, the demo release room, and the booking reference prefix. Rooms and requests store their venue, so several venues can share one database.
+Each deployment serves one venue, set with `MARKETPLACE_VENUE` in the backend. Use `digs` for Mesh at Digs (the default), `kowork` for Kowork at Kjøpmannsgata 40, or `brighten` for Brighten at Bakke Bydelshus, Nordre Berggate 2. The venue sets the page branding, the rooms that requests can match, the demo release room, and the booking reference prefix. Rooms and requests store their venue, so several venues can share one database.
 
 To run the Kowork demo with Docker Compose, run this from `marketplace/`.
 
@@ -69,10 +69,12 @@ To run the Kowork demo with Docker Compose, run this from `marketplace/`.
 MARKETPLACE_VENUE=kowork MARKETPLACE_DEMO_MODE=1 docker compose up --build -d --wait
 ```
 
-Kowork has a shared meeting room for 8 to 12 people and a quiet room, seeded in `backend/app/migrations/002_venues.sql`. The capacities come from koteng.no. The equipment and prices are placeholders until Kowork confirms them. Add a venue by adding it to `backend/app/venues.py` and seeding its rooms in a new migration.
+Kowork has a shared meeting room for 8 to 12 people and a quiet room, seeded in `backend/app/migrations/002_venues.sql`. The capacities come from koteng.no. The equipment and prices are placeholders until Kowork confirms them. Brighten has a meeting room and a phone pod, seeded in `backend/app/migrations/003_brighten.sql`. brighten.no names both but lists no capacities, equipment, or prices, so all of those are placeholders until Brighten confirms them. Run its demo with `MARKETPLACE_VENUE=brighten`.
+
+Add a venue by adding it to `backend/app/venues.py` and seeding its rooms in a new migration.
 
 ## Connect a device
 
-Set `MARKETPLACE_DEVICE_TOKEN` to enable `POST /internal/device/events`. The device integration sends `Authorization: Bearer <token>`. For local testing, the fixture adapter accepts `type: room.released`, `event_id`, `external_room_id` (use `digs-demo-1` or `digs-demo-2` at Digs, or `kowork-meeting-room` or `kowork-quiet-room` at Kowork), `block_id`, `released_at`, and `scheduled_end_at`. Send both timestamps as ISO 8601 strings with offsets, and reuse event and block IDs when retrying the same release.
+Set `MARKETPLACE_DEVICE_TOKEN` to enable `POST /internal/device/events`. The device integration sends `Authorization: Bearer <token>`. For local testing, the fixture adapter accepts `type: room.released`, `event_id`, `external_room_id` (use `digs-demo-1` or `digs-demo-2` at Digs, `kowork-meeting-room` or `kowork-quiet-room` at Kowork, or `brighten-meeting-room` or `brighten-phone-pod` at Brighten), `block_id`, `released_at`, and `scheduled_end_at`. Send both timestamps as ISO 8601 strings with offsets, and reuse event and block IDs when retrying the same release.
 
 When the real API is ready, set `MARKETPLACE_DEVICE_ADAPTER` to a trusted Python factory path such as `app.vendor_device:create_adapter`. The factory implements `DeviceAdapter` in `backend/app/device.py`. A webhook or a poller can pass the provider payload through the same adapter. The adapter supplies a source, stable IDs, and the release window. The backend handles deduplication, availability, quotes, and booking.
