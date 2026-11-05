@@ -18,6 +18,12 @@ services:
         value: "1"
       - key: MARKETPLACE_DEMO_MODE
         value: "1"
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        value: mailto:hello@standbyroom.com
 
 databases:
   - name: roomline-marketplace-preview-db

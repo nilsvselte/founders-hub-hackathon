@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import AwareDatetime
 
-from . import db, host, preferences, suggestions
+from . import db, host, notify, preferences, suggestions
 from .accounts import Account, require_agent_or_user, require_browser_mutation, require_user, router as accounts_router
 from .device import (
     FixtureDeviceAdapter, InvalidDevicePayload, RoomRelease, RoomReleaseRequest,
@@ -32,11 +32,22 @@ app.include_router(accounts_router)
 app.include_router(host.router)
 app.include_router(preferences.router)
 app.include_router(suggestions.router)
+app.include_router(notify.router)
 logger = logging.getLogger(__name__)
 device_bearer = HTTPBearer(auto_error=False)
 _match_workers = ThreadPoolExecutor(max_workers=4, thread_name_prefix="room-matcher")
 _match_lock = Lock()
 _active_matches: dict[str, Event] = {}
+
+
+_background_tasks: set[asyncio.Task] = set()
+
+
+@app.on_event("startup")
+async def start_notification_watch() -> None:
+    task = asyncio.create_task(notify.watch_booked_empty())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
 
 @app.exception_handler(psycopg.Error)
@@ -85,6 +96,7 @@ def _match_candidates(request_id: str, previous: list[dict]) -> tuple[list[dict]
             return previous, True
         offer = db.create_offer(request_id, candidates[decision.candidate_index], decision.reason, decision.provider)
         if offer is not None:
+            notify.offer_created(offer["id"])
             return previous, True
         # Another request may have taken the slot while the matcher was choosing.
     return previous, False
@@ -286,7 +298,9 @@ def accept_standby_offer(
     request_id: UUID, offer_id: UUID, background_tasks: BackgroundTasks, account: StandbyRenter
 ) -> dict | Response:
     try:
-        return db.accept_offer(str(request_id), str(offer_id), user_id=account.id)
+        status = db.accept_offer(str(request_id), str(offer_id), user_id=account.id)
+        notify.booking_confirmed(offer_id)
+        return status
     except db.NotFound as exc:
         raise HTTPException(status_code=404, detail="Standby request or offer not found") from exc
     except db.Conflict:
@@ -346,5 +360,8 @@ def device_event(
         raise HTTPException(status_code=503, detail="Device adapter unavailable") from exc
     if event is not None and event.get("type") == "room.occupancy_changed":
         require_database()
-        return db.record_occupancy(event)
+        result = db.record_occupancy(event)
+        if event["occupied"] and result.get("reason") == "occupancy_recorded":
+            notify.occupancy_changed(event["external_room_id"])
+        return result
     return ingest_release(event, background_tasks)
