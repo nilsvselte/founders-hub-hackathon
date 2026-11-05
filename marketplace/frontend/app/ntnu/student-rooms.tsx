@@ -15,7 +15,11 @@ type Confirmation = { mode: Mode; confirmed: boolean; booking_id: string; room: 
 type Booking = { id: string; name: string; rooms?: { id: string; name?: string }[]; start?: string; end?: string; dates?: { date: string }; tid?: string };
 type ChatMessage = { role: "user" | "assistant"; text: string };
 
-const example = "Find a group room for 6 people in Realfagbygget tomorrow at 08:00 for 1 hour.";
+function example() {
+  const t = new Date(Date.now() + 15 * 60_000);
+  const hh = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit", hour12: false }).format(t);
+  return `Find a group room for 4 people at Gløshaugen today at ${hh} for 1 hour.`;
+}
 const initial: ChatMessage = { role: "assistant", text: "A place for your next study session. Tell me your campus, when you need a room, for how long, and how many people are coming." };
 
 function Arrow({ direction = "right" }: { direction?: "right" | "up" }) {
@@ -179,7 +183,7 @@ function Experience({ mode, changeMode }: { mode: Mode; changeMode: (mode: Mode)
           {messages.map((message, index) => <div className={message.role === "user" ? styles.userMessage : styles.assistantMessage} key={index}><span>{message.role === "user" ? "YOU" : "ASSISTANT"}</span><p>{message.text}</p></div>)}
           {busy === "search" && <p className={styles.searching} role="status">Checking your request and looking for rooms…</p>}
         </div>
-        {messages.length === 1 && <div className={styles.suggestions}><p>Not sure where to start?</p><button type="button" disabled={!status?.connected || !!busy} onClick={() => void send(undefined, example)}>6 people · Realfagbygget · tomorrow at 08:00 <Arrow /></button></div>}
+        {messages.length === 1 && <div className={styles.suggestions}><p>Not sure where to start?</p><button type="button" disabled={!status?.connected || !!busy} onClick={() => void send(undefined, example())}>4 people · Gløshaugen · right now <Arrow /></button></div>}
         <form className={styles.composer} onSubmit={(event) => void send(event)}>
           <label className={styles.composerLabel} htmlFor="ntnu-message">What does your study group need?</label>
           <div><textarea id="ntnu-message" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="A group room for 6, tomorrow at 08:00 for an hour…" rows={2} maxLength={2000} disabled={!status?.connected || !!busy} /><button type="submit" aria-label="Send room request" disabled={!draft.trim() || !status?.connected || !!busy}><Arrow direction="up" /></button></div>
@@ -203,5 +207,7 @@ function Experience({ mode, changeMode }: { mode: Mode; changeMode: (mode: Mode)
 export default function StudentRooms() {
   const { account } = useAccount();
   const [mode, setMode] = useState<Mode>("live");
+  // Demo: /ntnu?demo opens the guided demo straight away.
+  useEffect(() => { if (new URLSearchParams(window.location.search).has("demo")) setMode("demo"); }, []);
   return <Experience key={`${mode}:${account?.id ?? "anonymous"}`} mode={mode} changeMode={setMode} />;
 }
