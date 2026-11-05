@@ -69,6 +69,7 @@ em { font-style: italic; color: var(--accent); }
 .btn-ghost { background: rgba(222, 216, 198, 0.08); color: var(--ink); border-color: var(--border); }
 .btn-ghost:hover { background: rgba(222, 216, 198, 0.14); }
 .btn-gold { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.closing .btn-gold { min-height: 56px; padding: 18px 32px; font-size: 18px; }
 .btn-gold:hover { background: #F2C653; }
 .btn:disabled { opacity: 0.45; cursor: default; transform: none; }
 
@@ -194,6 +195,8 @@ section:not(.hero) { padding: var(--section) 0; }
 .step:hover { color: rgba(244, 241, 230, 0.6); }
 .step.is-on { color: var(--ink); }
 .step:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.step-n { display: inline-block; width: 1.4em; font-variant-numeric: tabular-nums; color: var(--accent); opacity: 0.5; }
+.step.is-on .step-n { opacity: 1; }
 .steps p { max-width: 46ch; color: var(--ink-soft); margin-top: 12px; display: none; }
 .steps li:has(.is-on) p { display: block; }
 
@@ -220,12 +223,13 @@ section:not(.hero) { padding: var(--section) 0; }
 .facts dd { margin: 0; color: var(--ink-soft); }
 
 /* Closing + footer */
-.closing { padding: 160px 0 !important; background: radial-gradient(70% 80% at 50% 100%, #1E2944 0%, var(--ground) 70%); }
+.closing { padding: 128px 0 160px !important; background: radial-gradient(70% 80% at 50% 100%, #1E2944 0%, var(--ground) 70%); }
 .closing-title { font-size: clamp(44px, 6vw, 80px); line-height: 1.02; letter-spacing: -0.02em; }
 .closing .lead { margin: 24px auto 0; }
 .footer { background: var(--ground-deep); padding: 72px 0 48px; border-top: 1px solid var(--border); }
 .footer-inner { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
 .footer-name { font: 500 clamp(48px, 8vw, 112px)/0.95 var(--display); color: var(--ink); letter-spacing: -0.03em; }
+.footer-side { display: flex; flex-direction: column; gap: 14px; }
 .footer-note { font-size: 14px; color: var(--muted); max-width: 40ch; }
 
 /* Phone */
@@ -250,7 +254,9 @@ section:not(.hero) { padding: var(--section) 0; }
   .door { padding: 28px; }
   .door h3 { font-size: 28px; }
   .device-art { min-height: 340px; }
-  .closing { padding: 112px 0 !important; }
+  .closing { padding: 88px 0 112px !important; }
+  .closing-title { font-size: 40px; }
+  .footer-name { font-size: 56px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

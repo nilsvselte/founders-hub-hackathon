@@ -83,3 +83,19 @@
   .withEditor .room, .room { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
   .room h2 { font-size: 1.5rem; }
 }
+
+/* Owner cleanup: one header row, live summary strip, no overflow on phones. */
+.headActions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 22px 0 0; }
+.summary > div { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--paper); min-width: 0; }
+.summary dt { color: var(--muted); font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.summary dd { margin: 6px 0 0; font: 500 1.6rem/1.1 var(--serif); overflow-wrap: anywhere; }
+.status > span { white-space: normal; }
+.release .primary { width: 100%; }
+@media (max-width: 500px) {
+  .heading h1, .access h1 { font-size: 2.6rem; }
+  .summary { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .summary > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .summary dd { margin: 0; font-size: 1.25rem; }
+  .release { grid-column: 1 / -1; justify-self: stretch; }
+}

@@ -38,15 +38,15 @@ function RoomStatus({ room, now }: { room: Listing; now: number }) {
   return (
     <div className={styles.status} aria-live="polite">
       <span className={booking ? styles.booked : styles.free}>
-        {room.current_booking ? "Booked" : room.active_block ? "Blocked" : "Free now"}
+        {room.current_booking ? "Booked" : room.active_block ? "Reserved" : "Free now"}
         {booking && <> until <time dateTime={booking.end_at}>{clock(booking.end_at, now)}</time></>}
       </span>
       <span className={sensor ? (sensor.occupied ? styles.occupied : styles.vacant) : styles.noSensor}>
         {sensor
           ? <>{sensor.occupied ? "Occupied" : "Empty"} since <time dateTime={sensor.changed_at}>{clock(sensor.changed_at, now)}</time></>
-          : "No sensor"}
+          : "Sensor offline"}
       </span>
-      {ghost !== null && <strong className={styles.ghost} role="status">⚠ {room.current_booking ? "Booked" : "Blocked"} but empty for {ghost} min</strong>}
+      {ghost !== null && <strong className={styles.ghost} role="status">{room.current_booking ? "Booked" : "Reserved"} but empty for {ghost} min</strong>}
     </div>
   );
 }
@@ -76,17 +76,15 @@ function ListingThumbnail({ imageKey }: { imageKey: string }) {
 export default function HostPage() {
   const { account, loading } = useAccount();
 
-  if (loading) return <main className={styles.page}><p role="status">Loading host workspace…</p></main>;
+  if (loading) return <main className={styles.page}><p role="status">Loading your rooms…</p></main>;
 
   if (account?.role !== "host") return (
     <main className={styles.page}>
       <div className={styles.access}>
-        <p className={styles.kicker}>For hosts</p>
-        <h1>Host workspace</h1>
-        <p>{account ? "A host account is needed to list and manage rooms." : "Sign in as a host to manage your room listings and open up available time."}</p>
+        <h1>Your rooms</h1>
+        <p>Couldn’t open your rooms. Reload the page to try again.</p>
         <div className={styles.accessActions}>
-          {!account && <Link className={styles.primary} href="/sign-in?next=%2Fhost">Host sign in</Link>}
-          <Link className={styles.secondary} href="/register?role=host&next=%2Fhost">Create a host account</Link>
+          <button type="button" className={styles.primary} onClick={() => window.location.reload()}>Reload</button>
         </div>
       </div>
     </main>
@@ -191,7 +189,7 @@ function HostDashboard() {
       if (current) replaceListing(room);
       else setListings((previous) => [room, ...previous]);
       setEditor(null);
-      setNotice(current ? "Listing details updated." : "Draft created. Publish it when you're ready.");
+      setNotice(current ? "Room updated." : "Room added. Publish it when you're ready.");
     });
   }
 
@@ -201,7 +199,7 @@ function HostDashboard() {
         method: "PATCH", body: JSON.stringify({ published: !room.published }),
       });
       replaceListing(next);
-      setNotice(next.published ? `${next.name} is now on the marketplace.` : `${next.name} is now a draft.`);
+      setNotice(next.published ? `${next.name} is now on the marketplace.` : `${next.name} is hidden from the marketplace.`);
     });
   }
 
@@ -220,8 +218,8 @@ function HostDashboard() {
       }
       releaseAttempts.current.delete(room.id);
       setNotice(result.created
-        ? `${room.name} is open for ${duration_minutes} minutes, including turnover time.`
-        : `The release for ${room.name} was already recorded.`);
+        ? `${room.name} is open for booking for ${duration_minutes} minutes.`
+        : `${room.name} is already open for booking.`);
     });
   }
 
@@ -239,7 +237,7 @@ function HostDashboard() {
         method: "POST", body: JSON.stringify({ starts_at: start.toISOString(), ends_at: end.toISOString() }),
       });
       form.reset();
-      setNotice(`Block scheduled for ${room.name}. Press Release room on its device when the room is free.`);
+      setNotice(`Time reserved in ${room.name}.`);
     });
   }
 
@@ -249,13 +247,22 @@ function HostDashboard() {
     <main className={styles.page}>
       <header className={styles.heading}>
         <div>
-          <p className={styles.kicker}>Host workspace</p>
           <h1>Your rooms</h1>
-          <p>Manage listings and release time when a room becomes available.</p>
-          <LiveRoomLink />
+          <p>Live from the room sensor. Release empty time so others can book it.</p>
         </div>
-        <button type="button" className={styles.primary} disabled={!!busy || loadingListings || !!loadError} onClick={() => openEditor("new")}>＋ Add a room</button>
+        <div className={styles.headActions}>
+          <LiveRoomLink />
+          <button type="button" className={styles.secondary} disabled={!!busy || loadingListings || !!loadError} onClick={() => openEditor("new")}>+ Add a room</button>
+        </div>
       </header>
+
+      {!loadingListings && listings.length > 0 && (
+        <dl className={styles.summary} aria-label="Right now">
+          <div><dt>In use now</dt><dd>{listings.filter((room) => room.last_occupancy?.occupied).length} of {listings.length}</dd></div>
+          <div><dt>Booked now</dt><dd>{listings.filter((room) => room.current_booking).length}</dd></div>
+          <div><dt>Earning now</dt><dd>{money(listings.reduce((sum, room) => sum + (room.current_booking ? room.hourly_rate_ore : 0), 0))} / h</dd></div>
+        </dl>
+      )}
 
       {notice && <p className={styles.notice} role="status">{notice}</p>}
       {(error || loadError) && <p className={styles.error} role="alert">{error || loadError}</p>}
@@ -263,8 +270,7 @@ function HostDashboard() {
       <div className={editor ? styles.withEditor : styles.content}>
         {editor && (
           <section className={styles.editor} aria-labelledby="listing-editor">
-            <p className={styles.kicker}>{selected ? "Listing details" : "New listing"}</p>
-            <h2 id="listing-editor" ref={editorHeading} tabIndex={-1}>{selected ? `Edit ${selected.name}` : "Add a room"}</h2>
+                        <h2 id="listing-editor" ref={editorHeading} tabIndex={-1}>{selected ? `Edit ${selected.name}` : "Add a room"}</h2>
             <form className={styles.form} key={selected?.id ?? "new"} onSubmit={save}>
               <label>Room name<input name="name" defaultValue={selected?.name} maxLength={100} required placeholder="The Library" /></label>
               <label>Venue<input name="venue" defaultValue={selected?.venue} maxLength={100} required placeholder="Møllehuset" /></label>
@@ -275,7 +281,7 @@ function HostDashboard() {
               <label className={styles.full}>Equipment <span>separate items with commas</span><input name="equipment" defaultValue={selected?.equipment.join(", ")} maxLength={200} placeholder="Screen, whiteboard, video conferencing" /></label>
               <label className={styles.full}>Description<textarea name="description" defaultValue={selected?.description} rows={3} maxLength={800} required placeholder="What should people know about this room?" /></label>
               <div className={`${styles.actions} ${styles.full}`}>
-                <button type="submit" className={styles.primary} disabled={!!busy}>{busy === "save" ? "Saving…" : selected ? "Save changes" : "Create draft"}</button>
+                <button type="submit" className={styles.primary} disabled={!!busy}>{busy === "save" ? "Saving…" : selected ? "Save" : "Add room"}</button>
                 <button type="button" className={styles.secondary} disabled={!!busy} onClick={() => setEditor(null)}>Cancel</button>
               </div>
             </form>
@@ -287,10 +293,9 @@ function HostDashboard() {
           {loadError && <button className={styles.secondary} type="button" onClick={() => window.location.reload()}>Reload rooms</button>}
           {!loadingListings && !loadError && listings.length === 0 && (
             <div className={styles.empty}>
-              <span className={styles.emptyMark} aria-hidden="true">✳</span>
               <div>
                 <h2>No rooms listed yet</h2>
-                <p>Add room details first. You can publish the listing when it's ready.</p>
+                <p>Add a room to start renting out its empty time.</p>
               </div>
             </div>
           )}
@@ -300,26 +305,25 @@ function HostDashboard() {
               <div className={styles.roomInfo}>
                 <div className={styles.roomMeta}>
                   <span>{room.kind}</span>
-                  <span className={room.published ? styles.published : styles.draft}>{room.published ? "Published" : "Draft"}</span>
+                  <span className={room.published ? styles.published : styles.draft}>{room.published ? "Listed" : "Hidden"}</span>
                 </div>
                 <h2>{room.name}</h2>
-                <p>{room.venue} · {room.city}</p>
-                <p>{room.capacity} guests · {money(room.hourly_rate_ore)} / hour</p>
+                <p>{room.venue} · {room.city} · {room.capacity} people · {money(room.hourly_rate_ore)} / hour</p>
                 <RoomStatus room={room} now={now} />
                 <div className={styles.actions}>
-                  <button className={styles.secondary} type="button" disabled={!!busy} onClick={() => openEditor(room)}>Edit listing</button>
+                  <button className={styles.secondary} type="button" disabled={!!busy} onClick={() => openEditor(room)}>Edit</button>
                   <button className={styles.secondary} type="button" disabled={!!busy} onClick={() => togglePublication(room)}>{room.published ? "Unpublish" : "Publish"}</button>
-                  {room.published && <Link className={styles.preview} href={`/rooms/${encodeURIComponent(room.id)}`}>View listing ↗</Link>}
+                  {room.published && <Link className={styles.preview} href={`/rooms/${encodeURIComponent(room.id)}`}>View listing</Link>}
                 </div>
                 {room.published && (
                   <details className={styles.block}>
-                    <summary>Schedule a room block</summary>
-                    <p>Reserve this time for existing use. Press Release room on the room’s device to offer any remaining time. Times are in Oslo time.</p>
+                    <summary>Reserve time for your own use</summary>
+                    <p>Hold the room for your own team. Times are Oslo time.</p>
                     <form className={styles.form} onSubmit={(event) => scheduleBlock(event, room)}>
-                      <label>Block starts<input name="start" type="datetime-local" required /></label>
-                      <label>Block ends<input name="end" type="datetime-local" required /></label>
+                      <label>Starts<input name="start" type="datetime-local" required /></label>
+                      <label>Ends<input name="end" type="datetime-local" required /></label>
                       <div className={styles.full}>
-                        <button type="submit" className={styles.primary} disabled={!!busy}>{busy === `block-${room.id}` ? "Scheduling…" : "Schedule block"}</button>
+                        <button type="submit" className={styles.primary} disabled={!!busy}>{busy === `block-${room.id}` ? "Saving…" : "Reserve"}</button>
                       </div>
                     </form>
                   </details>
@@ -327,10 +331,10 @@ function HostDashboard() {
               </div>
               {room.published && (
                 <form className={styles.release} onSubmit={(event) => release(event, room)}>
-                  <label>Available from now<select name="duration" defaultValue="60" aria-label={`Available time for ${room.name}`}>
+                  <label>Free for<select name="duration" defaultValue="60" aria-label={`Available time for ${room.name}`}>
                     <option value="30">30 minutes</option><option value="60">1 hour</option><option value="120">2 hours</option><option value="240">4 hours</option><option value="480">8 hours</option>
                   </select></label>
-                  <button type="submit" className={styles.primary} disabled={!!busy}>Release time</button>
+                  <button type="submit" className={styles.primary} disabled={!!busy}>Release for booking</button>
                 </form>
               )}
             </article>

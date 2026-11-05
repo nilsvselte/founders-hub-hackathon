@@ -51,24 +51,24 @@ export default function LiveRoomPage() {
 
   return (
     <main className={styles.page}>
-      <p className={styles.kicker}>Live room view</p>
+      <p className={styles.kicker}>Live status</p>
       <h1 className={styles.name}>{room ? `${room.name} · ${room.venue}` : roomId}</h1>
 
       <section className={`${styles.indicator} ${styles[state]}`} aria-live="polite">
         <span className={styles.dot} aria-hidden="true" />
-        <strong>{!room ? "Connecting…" : state === "occupied" ? "Someone’s in the room" : state === "empty" ? "Empty" : "No sensor"}</strong>
-        {sensor && <span className={styles.meta}>Last sensor reading {clock.format(new Date(sensor.changed_at))}</span>}
+        <strong>{!room ? "Connecting…" : state === "occupied" ? "Occupied" : state === "empty" ? "Empty" : "Sensor offline"}</strong>
+        {sensor && <span className={styles.meta}>Since {clock.format(new Date(sensor.changed_at))}</span>}
       </section>
 
       {room && (
         <p className={`${styles.booking} ${booking ? styles.booked : styles.free}`}>
-          {room.current_booking ? "Booked" : room.active_block ? "Blocked" : "Free now"}
+          {room.current_booking ? "Booked" : room.active_block ? "Reserved" : "Free now"}
           {booking && <> · {hm.format(new Date(booking.start_at))}–{hm.format(new Date(booking.end_at))}</>}
         </p>
       )}
-      {ghost !== null && <p className={styles.ghost} role="status">⚠ {room?.current_booking ? "Booked" : "Blocked"} but empty for {ghost} min</p>}
-      {error && <p className={styles.error} role="alert">{error}. Retrying…</p>}
-      <p className={styles.meta}>Updated {clock.format(new Date(now))} · refreshes every 2 s</p>
+      {ghost !== null && <p className={styles.ghost} role="status">{room?.current_booking ? "Booked" : "Reserved"} but empty for {ghost} min</p>}
+      {error && <p className={styles.error} role="alert">Connection lost. Retrying…</p>}
+      <p className={styles.meta}>Updated {clock.format(new Date(now))}</p>
     </main>
   );
 }

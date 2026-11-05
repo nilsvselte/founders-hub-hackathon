@@ -6,7 +6,6 @@ import { DemoGuestButton, useAccount } from "../account";
 import { GoogleCalendarLink } from "../google-calendar-link";
 import type { CalendarOffer } from "../google-calendar";
 import { api, money } from "../market";
-import { DemoRoomLink, LiveRoomLink } from "../demo-room";
 
 type Booking = {
   id: string;
@@ -84,16 +83,13 @@ export default function BookingsPage() {
 
   return (
     <main className="booking-page">
-      <p className="identity-kicker">Your dashboard</p>
       <h1>My bookings</h1>
-      <p className="identity-intro">Your booked rooms, open standby requests and settings in one place.</p>
+      <p className="identity-intro">Your booked rooms and open requests.</p>
       <ul className="dash-links" aria-label="Quick links">
         <li><Link href="/">Find a room</Link></li>
         {renterId && <li><Link href="/agent">Agent settings</Link></li>}
         {renterId && <li><Link href="/account/notifications">Notifications</Link></li>}
         {renterId && <li><Link href="/account/preferences">Preferences</Link></li>}
-        <li><DemoRoomLink /></li>
-        <li><LiveRoomLink /></li>
       </ul>
       {loading ? <p role="status">Checking your account…</p> : !account ? (
         <p><DemoGuestButton className="identity-primary" /></p>

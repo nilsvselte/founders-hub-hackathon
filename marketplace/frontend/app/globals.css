@@ -688,3 +688,16 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   html, body { overscroll-behavior-y: none; }
   .market-header { position: sticky; top: 0; z-index: 30; }
 }
+
+/* booker cleanup */
+.market-browse, .booking-page { overflow-x: clip; }
+.find-room .panel-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.find-room .panel-heading h2 { margin: 0; }
+.browse-results-heading { margin-bottom: 16px; }
+.dash-links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.booking-row h3, .room-card-title { overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .find-room .panel-heading .button { width: 100%; justify-content: center; }
+  .browse-categories { overflow-x: auto; max-width: 100%; }
+  .browse-search { max-width: 100%; }
+}
