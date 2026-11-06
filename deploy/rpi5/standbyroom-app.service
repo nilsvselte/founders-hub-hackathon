@@ -1,0 +1,12 @@
+[Unit]
+Description=standbyroom marketplace frontend (8014)
+[Service]
+WorkingDirectory=/home/afras/projects/founders-hub-hackathon/marketplace/frontend
+Environment=PORT=8014
+Environment=HOSTNAME=127.0.0.1
+Environment=MARKETPLACE_API_URL=http://127.0.0.1:8013
+ExecStart=/home/afras/.local/share/fnm/node-versions/v24.15.0/installation/bin/node node_modules/next/dist/bin/next start -p 8014 -H 127.0.0.1
+Restart=always
+RestartSec=3
+[Install]
+WantedBy=default.target

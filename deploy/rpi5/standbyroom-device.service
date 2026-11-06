@@ -1,0 +1,10 @@
+[Unit]
+Description=standbyroom device server (8012)
+[Service]
+WorkingDirectory=/home/afras/projects/founders-hub-hackathon/device/server
+EnvironmentFile=/home/afras/deploy/standbyroom-apps/device.env
+ExecStart=/home/afras/.local/bin/uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8012
+Restart=always
+RestartSec=3
+[Install]
+WantedBy=default.target
